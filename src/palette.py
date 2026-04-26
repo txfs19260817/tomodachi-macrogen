@@ -1,8 +1,5 @@
 import colorsys
 from dataclasses import dataclass
-from typing import Literal
-
-ColorOrder = Literal["frequency", "original-palette", "luminance", "hue"]
 
 
 @dataclass(frozen=True)
@@ -44,8 +41,3 @@ def rgb_to_hsv(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
     r, g, b = (channel / 255.0 for channel in rgb)
     hue, saturation, value = colorsys.rgb_to_hsv(r, g, b)
     return (hue * 360.0, saturation, value)
-
-
-def _luminance(rgb: tuple[int, int, int]) -> float:
-    r, g, b = rgb
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
