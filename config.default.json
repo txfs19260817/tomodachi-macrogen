@@ -8,7 +8,7 @@
   "colour_rect_width": 212,
   "colour_rect_height": 111,
   "anchor_colour_rect_method": "analog",
-  "split_lines": 8000,
+  "split_lines": 50000,
   "calibration_block_size": 3,
   "timing": {
     "tap_hold_frames": 2,

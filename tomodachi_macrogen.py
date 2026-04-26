@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_CONFIG = ROOT / "config.default.json"
 OUTPUT_ROOT = ROOT / "out"
 RUN_README_TEMPLATE = ROOT / "README_RUN.template.md"
+RUN_README_EN_TEMPLATE = ROOT / "README_RUN-en.template.md"
 
 
 def main() -> int:
@@ -142,7 +143,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["safe-pixel", "nearest", "horizontal-runs"],
         help="Drawing path mode",
     )
-    parser.add_argument("--split-lines", type=int, help="Maximum macro lines per part")
+    parser.add_argument(
+        "--split-lines",
+        type=int,
+        help="Maximum macro lines per part; 0 disables line-based splitting",
+    )
     parser.add_argument("--calibrate-only", action="store_true", help="Generate calibration macro")
     parser.add_argument(
         "--clean-output",
@@ -388,6 +393,10 @@ def write_common_outputs(
     )
     (out_dir / "README_RUN.md").write_text(
         RUN_README_TEMPLATE.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (out_dir / "README_RUN-en.md").write_text(
+        RUN_README_EN_TEMPLATE.read_text(encoding="utf-8"),
         encoding="utf-8",
     )
 

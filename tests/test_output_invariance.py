@@ -35,6 +35,8 @@ class TestOutputInvariance(unittest.TestCase):
                     with patch("sys.argv", argv):
                         self.assertEqual(main(), 0)
 
+                    self.assertTrue((out_dir / "README_RUN.md").exists())
+                    self.assertTrue((out_dir / "README_RUN-en.md").exists())
                     pixels = _read_preview_pixels(out_dir / "preview_quantized.png")
                     if baseline is None:
                         baseline = pixels

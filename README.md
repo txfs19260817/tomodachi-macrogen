@@ -41,6 +41,31 @@ out/doll
 
 Switch / Switch 2 系统设置里需要打开 Pro Controller Wired Communication。
 
+## GLaMS 使用
+
+GLaMS 仓库：<https://github.com/knflrpn/GLaMS>
+
+本仓库把 GLaMS 作为 Git submodule 放在 `external/GLaMS`。首次克隆本仓库后拉取它：
+
+```bash
+git submodule update --init --recursive
+```
+
+更新到 GLaMS 上游最新版本：
+
+```bash
+git submodule update --remote external/GLaMS
+```
+
+本工具只生成 GLaMS/SwiCC 可读取的 `.txt` 宏文件，不直接控制串口。基本流程：
+
+1. 按硬件工作流接好两块 RP2040。
+2. 用 Chrome 或 Edge 打开 `external/GLaMS/macros.html`。
+3. 选择连接到电脑的串口，也就是烧录 `SwiCC_UART_Bridge.uf2` 的 B 板。
+4. 在游戏内完成“游戏内准备”里的初始状态。
+5. 在 GLaMS 中按编号顺序加载并运行 `image_part1.txt`、`image_part2.txt` 等文件。
+6. 每个 part 运行完成后再运行下一个 part，不要跳过或乱序。
+
 ## 安装
 
 先安装 `uv`。优先使用系统包管理器；如果没有，也可以用 `pip install --user uv`。
@@ -60,7 +85,7 @@ uv sync
 - `--palette-slots N`：游戏内可用调色盘 slot 数，默认是 `9`。
 - `--color-order frequency|original-palette|luminance|hue`：颜色分批和绘制顺序，默认 `original-palette`，也就是 Living the Grid JSON / UI 的调色板顺序。
 - `--mode safe-pixel|nearest|horizontal-runs`：绘图路径模式，默认 `safe-pixel`。
-- `--split-lines N`：每个 part 文件最多多少行。
+- `--split-lines N`：每个 part 文件最多多少行；`0` 表示不按行数切分，只输出一个 part。
 - `--calibrate-only`：只生成校准脚本。
 - `--clean-output`：删除项目根目录 `out/` 下的所有生成输出，然后退出。
 - `--clean-cache`：删除本地 Python/工具缓存，例如 `.ruff_cache` 和 `__pycache__`，可以和 `--clean-output` 一起使用。
@@ -71,7 +96,13 @@ uv sync
 从 Living the Grid JSON 生成宏：
 
 ```bash
-uv run python tomodachi_macrogen.py input.json --out doll --split-lines 8000 --mode safe-pixel
+uv run python tomodachi_macrogen.py input.json --out doll --split-lines 50000 --mode safe-pixel
+```
+
+不切分，只输出一个 `image_part1.txt`：
+
+```bash
+uv run python tomodachi_macrogen.py input.json --out doll --split-lines 0
 ```
 
 只生成校准宏：
@@ -136,7 +167,8 @@ uv run tomodachi-macrogen input.json --out doll
 - `preview_quantized.png`：按 JSON palette 和 pixels 还原的预览图。
 - `palette_report.csv`：颜色、HSV、Living the Grid press counts、像素数量、batch 和 slot 分配报告。
 - `manifest.json`：本次生成摘要。
-- `README_RUN.md`：运行脚本前的硬件和游戏内设置说明。
+- `README_RUN.md`：中文运行说明。
+- `README_RUN-en.md`：英文运行说明。
 - `config_used.json`：合并默认配置、用户配置和 CLI 参数后的实际配置。
 
 校准模式会生成：
@@ -144,6 +176,7 @@ uv run tomodachi-macrogen input.json --out doll
 - `calibration_part1.txt`、`calibration_part2.txt` 等校准宏脚本。
 - `manifest.json`
 - `README_RUN.md`
+- `README_RUN-en.md`
 - `config_used.json`
 
 在 GLaMS 中按文件编号顺序选择并运行这些 `.txt` 文件。

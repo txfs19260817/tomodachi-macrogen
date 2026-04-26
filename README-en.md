@@ -41,6 +41,31 @@ out/doll
 
 Enable Pro Controller Wired Communication in the Switch / Switch 2 system settings.
 
+## Using GLaMS
+
+GLaMS repository: <https://github.com/knflrpn/GLaMS>
+
+This repository tracks GLaMS as a Git submodule at `external/GLaMS`. After cloning this repository, fetch it with:
+
+```bash
+git submodule update --init --recursive
+```
+
+Update it to the latest upstream GLaMS revision with:
+
+```bash
+git submodule update --remote external/GLaMS
+```
+
+This tool only generates `.txt` macro files readable by GLaMS/SwiCC. It does not control the serial port directly. Basic flow:
+
+1. Wire the two RP2040 boards as described in the hardware workflow.
+2. Open `external/GLaMS/macros.html` in Chrome or Edge.
+3. Select the serial port connected to Board B, the board flashed with `SwiCC_UART_Bridge.uf2`.
+4. Complete the in-game setup before starting the script.
+5. In GLaMS, load and run `image_part1.txt`, `image_part2.txt`, and subsequent files in numeric order.
+6. Wait for each part to finish before running the next one. Do not skip or reorder parts.
+
 ## Install
 
 Install `uv` first. Prefer your OS package manager; `pip install --user uv` is a fallback.
@@ -60,7 +85,7 @@ uv sync
 - `--palette-slots N`: number of available in-game palette slots. The default is `9`.
 - `--color-order frequency|original-palette|luminance|hue`: color batching and drawing order. Defaults to `original-palette`, the same order as the Living the Grid JSON / UI palette.
 - `--mode safe-pixel|nearest|horizontal-runs`: drawing path mode. Defaults to `safe-pixel`.
-- `--split-lines N`: maximum macro lines per part file.
+- `--split-lines N`: maximum macro lines per part file; `0` disables line-based splitting and writes one part.
 - `--calibrate-only`: generate calibration scripts only.
 - `--clean-output`: delete all generated files under the project `out/` directory and exit.
 - `--clean-cache`: delete local Python/tool caches such as `.ruff_cache` and `__pycache__`; can be combined with `--clean-output`.
@@ -71,7 +96,13 @@ uv sync
 Generate macros from Living the Grid JSON:
 
 ```bash
-uv run python tomodachi_macrogen.py input.json --out doll --split-lines 8000 --mode safe-pixel
+uv run python tomodachi_macrogen.py input.json --out doll --split-lines 50000 --mode safe-pixel
+```
+
+Disable splitting and write only `image_part1.txt`:
+
+```bash
+uv run python tomodachi_macrogen.py input.json --out doll --split-lines 0
 ```
 
 Generate calibration macros only:
@@ -136,7 +167,8 @@ JSON input mode generates:
 - `preview_quantized.png`: preview reconstructed from JSON palette and pixels.
 - `palette_report.csv`: color, HSV, Living the Grid press counts, pixel count, batch, and slot assignment report.
 - `manifest.json`: summary of the generation run.
-- `README_RUN.md`: hardware and in-game setup notes before running the scripts.
+- `README_RUN.md`: Chinese run instructions.
+- `README_RUN-en.md`: English run instructions.
 - `config_used.json`: the actual config after merging defaults, user config, and CLI overrides.
 
 Calibration mode generates:
@@ -144,6 +176,7 @@ Calibration mode generates:
 - `calibration_part1.txt`, `calibration_part2.txt`, and so on.
 - `manifest.json`
 - `README_RUN.md`
+- `README_RUN-en.md`
 - `config_used.json`
 
 Select and run the generated `.txt` files in GLaMS in numeric order.
