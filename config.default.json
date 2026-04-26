@@ -1,0 +1,43 @@
+{
+  "canvas_origin_x": 0,
+  "canvas_origin_y": 0,
+  "color_order": "frequency",
+  "mode": "safe-pixel",
+  "palette_slots": 9,
+  "hue_slider_steps": 202,
+  "colour_rect_width": 212,
+  "colour_rect_height": 111,
+  "anchor_colour_rect_method": "analog",
+  "split_lines": 8000,
+  "split_frames": 0,
+  "calibration_block_size": 3,
+  "timing": {
+    "tap_hold_frames": 2,
+    "tap_release_frames": 1,
+    "draw_hold_frames": 2,
+    "draw_release_frames": 1,
+    "movement_hold_frames": 1,
+    "movement_release_frames": 1,
+    "menu_open_frames": 8,
+    "menu_close_frames": 8,
+    "screen_settle_frames": 4,
+    "slot_anchor_hold_frames": 18,
+    "slot_anchor_release_frames": 2,
+    "slot_step_hold_frames": 2,
+    "slot_step_release_frames": 1,
+    "slot_settle_frames": 2,
+    "hue_anchor_hold_frames": 30,
+    "hue_anchor_release_frames": 2,
+    "hue_step_hold_frames": 2,
+    "hue_step_release_frames": 1,
+    "colour_rect_anchor_hold_frames": 45,
+    "colour_rect_anchor_settle_frames": 4,
+    "colour_rect_step_hold_frames": 1,
+    "colour_rect_step_release_frames": 1
+  },
+  "stick": {
+    "min": 0,
+    "neutral": 128,
+    "max": 255
+  }
+}
