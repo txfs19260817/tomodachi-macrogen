@@ -64,6 +64,7 @@ uv sync
 - `--split-frames N`：每个 part 文件最多多少帧；`0` 表示不按帧数切分。
 - `--calibrate-only`：只生成校准脚本。
 - `--clean-output`：删除项目根目录 `out/` 下的所有生成输出，然后退出。
+- `--clean-cache`：删除本地 Python/工具缓存，例如 `.ruff_cache` 和 `__pycache__`，可以和 `--clean-output` 一起使用。
 - `--preview-only`：只从 JSON 导出 `preview_quantized.png`，用于快速检查 Living the Grid 导出结果，不生成宏脚本。
 
 ## 常用命令
@@ -84,6 +85,12 @@ uv run python tomodachi_macrogen.py --out calibration --calibrate-only
 
 ```bash
 uv run python tomodachi_macrogen.py --clean-output
+```
+
+同时清理输出和缓存：
+
+```bash
+uv run python tomodachi_macrogen.py --clean-output --clean-cache
 ```
 
 只导出预览图：

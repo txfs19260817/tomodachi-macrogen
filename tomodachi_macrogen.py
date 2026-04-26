@@ -23,9 +23,16 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
+    did_clean = False
     if args.clean_output:
         clean_output()
         print(f"Cleaned output directory: {OUTPUT_ROOT}")
+        did_clean = True
+    if args.clean_cache:
+        clean_cache()
+        print("Cleaned local Python/tool caches")
+        did_clean = True
+    if did_clean:
         return 0
 
     config = load_config(args.config)
@@ -144,6 +151,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Delete generated files under the project out directory and exit",
     )
     parser.add_argument(
+        "--clean-cache",
+        action="store_true",
+        help="Delete local Python/tool caches and exit",
+    )
+    parser.add_argument(
         "--preview-only",
         action="store_true",
         help="Only export preview_quantized.png from Living the Grid JSON and exit",
@@ -199,6 +211,15 @@ def clean_output() -> None:
             shutil.rmtree(child)
         else:
             child.unlink()
+
+
+def clean_cache() -> None:
+    for cache_dir in [ROOT / ".ruff_cache", ROOT / ".pytest_cache"]:
+        if cache_dir.exists():
+            shutil.rmtree(cache_dir)
+    for pycache_dir in ROOT.rglob("__pycache__"):
+        if ".venv" not in pycache_dir.parts:
+            shutil.rmtree(pycache_dir)
 
 
 def build_living_grid_colors(grid: LivingGridData, order: str) -> list[PaletteColor]:

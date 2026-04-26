@@ -64,6 +64,7 @@ uv sync
 - `--split-frames N`: maximum frames per part file; `0` disables frame-based splitting.
 - `--calibrate-only`: generate calibration scripts only.
 - `--clean-output`: delete all generated files under the project `out/` directory and exit.
+- `--clean-cache`: delete local Python/tool caches such as `.ruff_cache` and `__pycache__`; can be combined with `--clean-output`.
 - `--preview-only`: export only `preview_quantized.png` from the JSON for quick verification; no macro parts are generated.
 
 ## Common Commands
@@ -84,6 +85,12 @@ Clean all outputs:
 
 ```bash
 uv run python tomodachi_macrogen.py --clean-output
+```
+
+Clean outputs and caches together:
+
+```bash
+uv run python tomodachi_macrogen.py --clean-output --clean-cache
 ```
 
 Export preview only:
