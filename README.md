@@ -58,10 +58,9 @@ uv sync
 - `--config CONFIG`：读取额外配置 JSON，并覆盖 `config.default.json`。
 - `--out OUT`：输出目录，默认是 `out`。相对路径会统一放到项目根目录的 `out/` 下；例如 `--out doll` 实际写入 `out/doll`。
 - `--palette-slots N`：游戏内可用调色盘 slot 数，默认是 `9`。
-- `--color-order frequency|original-palette|luminance|hue`：颜色分批和绘制顺序。
-- `--mode safe-pixel|nearest|horizontal-runs`：绘图路径模式。
+- `--color-order frequency|original-palette|luminance|hue`：颜色分批和绘制顺序，默认 `original-palette`，也就是 Living the Grid JSON / UI 的调色板顺序。
+- `--mode safe-pixel|nearest|horizontal-runs`：绘图路径模式，默认 `safe-pixel`。
 - `--split-lines N`：每个 part 文件最多多少行。
-- `--split-frames N`：每个 part 文件最多多少帧；`0` 表示不按帧数切分。
 - `--calibrate-only`：只生成校准脚本。
 - `--clean-output`：删除项目根目录 `out/` 下的所有生成输出，然后退出。
 - `--clean-cache`：删除本地 Python/工具缓存，例如 `.ruff_cache` 和 `__pycache__`，可以和 `--clean-output` 一起使用。
@@ -96,7 +95,7 @@ uv run python tomodachi_macrogen.py --clean-output --clean-cache
 只导出预览图：
 
 ```bash
-uv run python tomodachi_macrogen.py example.json --out preview_check --preview-only
+uv run python tomodachi_macrogen.py tests/fixtures/example.json --out preview_check --preview-only
 ```
 
 也可以使用安装后的命令入口：
@@ -126,6 +125,8 @@ uv run tomodachi-macrogen input.json --out doll
 - `press.b`
 
 本工具会直接使用 `press.h/s/b` 设置游戏内颜色，不再把 RGB 转普通 HSV。
+
+默认颜色顺序使用 `palette[]` 的原始顺序，这和 Living the Grid UI 里显示的 swatch 顺序一致。
 
 ## 输出文件
 

@@ -43,7 +43,7 @@ def main() -> int:
 
     if args.calibrate_only:
         writer = generate_calibration(config)
-        parts = writer.split_output(config.get("split_lines"), config.get("split_frames"))
+        parts = writer.split_output(config.get("split_lines"))
         part_files = write_parts(out_dir, "calibration_part", parts)
         write_common_outputs(
             out_dir,
@@ -88,10 +88,10 @@ def main() -> int:
         print(f"Wrote preview to {out_dir / 'preview_quantized.png'}")
         return 0
 
-    colors = build_living_grid_colors(grid, str(config.get("color_order", "frequency")))
+    colors = build_living_grid_colors(grid, str(config.get("color_order", "original-palette")))
     batches = make_batches(colors, int(config.get("palette_slots", 9)))
     writer = generate_living_grid_macro(config, grid, batches)
-    parts = writer.split_output(config.get("split_lines"), config.get("split_frames"))
+    parts = writer.split_output(config.get("split_lines"))
 
     grid.preview.save(out_dir / "preview_quantized.png")
     write_palette_report(out_dir / "palette_report.csv", flatten_batches(batches), grid)
@@ -143,7 +143,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Drawing path mode",
     )
     parser.add_argument("--split-lines", type=int, help="Maximum macro lines per part")
-    parser.add_argument("--split-frames", type=int, help="Maximum frames per part")
     parser.add_argument("--calibrate-only", action="store_true", help="Generate calibration macro")
     parser.add_argument(
         "--clean-output",
@@ -188,7 +187,6 @@ def apply_cli_overrides(config: dict[str, Any], args: argparse.Namespace) -> Non
         "color_order": args.color_order,
         "mode": args.mode,
         "split_lines": args.split_lines,
-        "split_frames": args.split_frames,
     }
     for key, value in mapping.items():
         if value is not None:

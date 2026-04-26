@@ -58,10 +58,9 @@ uv sync
 - `--config CONFIG`: read an extra JSON config file and override values from `config.default.json`.
 - `--out OUT`: output directory, defaults to `out`. Relative paths are placed under the project-level `out/` directory; for example, `--out doll` writes to `out/doll`.
 - `--palette-slots N`: number of available in-game palette slots. The default is `9`.
-- `--color-order frequency|original-palette|luminance|hue`: color batching and drawing order.
-- `--mode safe-pixel|nearest|horizontal-runs`: drawing path mode.
+- `--color-order frequency|original-palette|luminance|hue`: color batching and drawing order. Defaults to `original-palette`, the same order as the Living the Grid JSON / UI palette.
+- `--mode safe-pixel|nearest|horizontal-runs`: drawing path mode. Defaults to `safe-pixel`.
 - `--split-lines N`: maximum macro lines per part file.
-- `--split-frames N`: maximum frames per part file; `0` disables frame-based splitting.
 - `--calibrate-only`: generate calibration scripts only.
 - `--clean-output`: delete all generated files under the project `out/` directory and exit.
 - `--clean-cache`: delete local Python/tool caches such as `.ruff_cache` and `__pycache__`; can be combined with `--clean-output`.
@@ -96,7 +95,7 @@ uv run python tomodachi_macrogen.py --clean-output --clean-cache
 Export preview only:
 
 ```bash
-uv run python tomodachi_macrogen.py example.json --out preview_check --preview-only
+uv run python tomodachi_macrogen.py tests/fixtures/example.json --out preview_check --preview-only
 ```
 
 Installed command entry point:
@@ -126,6 +125,8 @@ Each `palette[]` entry must include:
 - `press.b`
 
 This tool uses `press.h/s/b` directly. It does not convert RGB through standard HSV for JSON input.
+
+The default color order uses the original `palette[]` order, matching the swatch order shown in the Living the Grid UI.
 
 ## Output Files
 
