@@ -1,26 +1,37 @@
 import unittest
 
-from src.path_planner import horizontal_runs, nearest_neighbor, snake_scan
+from src.path_planner import plan_color_pixels
 
 
 class TestPathPlanner(unittest.TestCase):
-    def test_snake_scan(self) -> None:
+    def test_uses_nearest_horizontal_run_endpoint(self) -> None:
         indices = [
-            [1, 0, 1],
-            [1, 1, 0],
+            [1, 1, 0, 0, 1, 1],
+            [0, 0, 0, 0, 0, 0],
         ]
-        self.assertEqual(snake_scan(indices, 1), [(0, 0), (2, 0), (1, 1), (0, 1)])
 
-    def test_horizontal_runs_preserve_snake_direction(self) -> None:
+        self.assertEqual(
+            plan_color_pixels(indices, 1, start=(5, 0)),
+            [(5, 0), (4, 0), (1, 0), (0, 0)],
+        )
+
+    def test_preserves_same_pixel_set(self) -> None:
         indices = [
-            [1, 1, 0],
-            [0, 1, 1],
+            [1, 0, 1, 1],
+            [0, 1, 0, 1],
+            [1, 1, 0, None],
         ]
-        self.assertEqual(horizontal_runs(indices, 1), [(0, 0), (1, 0), (2, 1), (1, 1)])
+        expected = {
+            (x, y)
+            for y, row in enumerate(indices)
+            for x, value in enumerate(row)
+            if value == 1
+        }
 
-    def test_nearest_neighbor_starts_from_origin(self) -> None:
-        points = [(5, 5), (1, 0), (2, 0)]
-        self.assertEqual(nearest_neighbor(points), [(1, 0), (2, 0), (5, 5)])
+        self.assertEqual(set(plan_color_pixels(indices, 1)), expected)
+
+    def test_missing_color_returns_empty_path(self) -> None:
+        self.assertEqual(plan_color_pixels([[0, None], [0, 0]], 1), [])
 
 
 if __name__ == "__main__":

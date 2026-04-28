@@ -69,6 +69,21 @@ class ColorPicker:
         self.writer.wait(int(self.timing.get("menu_close_frames", 8)))
         self.active_palette_slot = None
 
+    def set_current_palette_slot_press(self, press: PressCounts) -> None:
+        self.writer.tap("Y")
+        self.writer.wait(int(self.timing.get("menu_open_frames", 8)))
+        self.writer.tap("Y")
+        self.writer.wait(int(self.timing.get("screen_settle_frames", 4)))
+        self.writer.tap("R1")
+        self.writer.wait(int(self.timing.get("screen_settle_frames", 4)))
+        self.set_hue_press_count(press.h)
+        self.set_colour_rect_press_count(press.s, press.b)
+        self.writer.tap("A")
+        self.writer.wait(int(self.timing.get("screen_settle_frames", 4)))
+        self.writer.tap("B")
+        self.writer.wait(int(self.timing.get("menu_close_frames", 8)))
+        self.active_palette_slot = None
+
     def navigate_to_slot(self, slot_index: int) -> None:
         self._validate_slot(slot_index)
         self.writer.hold("D", int(self.timing.get("slot_anchor_hold_frames", 18)))

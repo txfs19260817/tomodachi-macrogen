@@ -1,5 +1,6 @@
 out/
 out_*/
+*.uf2
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

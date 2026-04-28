@@ -1,4 +1,3 @@
-import itertools
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,18 +8,17 @@ from PIL import Image
 from tomodachi_macrogen import main
 
 COLOR_ORDERS = ("frequency", "original-palette", "luminance", "hue")
-PATH_MODES = ("safe-pixel", "nearest", "horizontal-runs")
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "example.json"
 
 
 class TestOutputInvariance(unittest.TestCase):
-    def test_color_order_and_mode_keep_pixel_matrix_unchanged(self) -> None:
+    def test_color_order_keeps_preview_pixel_matrix_unchanged(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             baseline: bytes | None = None
 
-            for color_order, mode in itertools.product(COLOR_ORDERS, PATH_MODES):
-                with self.subTest(color_order=color_order, mode=mode):
-                    out_dir = Path(tmp) / f"{color_order}_{mode}"
+            for color_order in COLOR_ORDERS:
+                with self.subTest(color_order=color_order):
+                    out_dir = Path(tmp) / color_order
                     argv = [
                         "tomodachi_macrogen.py",
                         str(FIXTURE),
@@ -29,8 +27,6 @@ class TestOutputInvariance(unittest.TestCase):
                         "--preview-only",
                         "--color-order",
                         color_order,
-                        "--mode",
-                        mode,
                     ]
                     with patch("sys.argv", argv):
                         self.assertEqual(main(), 0)

@@ -7,6 +7,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from PIL import Image
+
 from src.color_picker import CALIBRATION_COLORS, ColorPicker
 from src.living_grid import LivingGridData, load_living_grid_json
 from src.macro_writer import MacroWriter
@@ -39,9 +41,18 @@ def main() -> int:
     config = load_config(args.config)
     apply_cli_overrides(config, args)
 
-    out_dir = resolve_output_dir(args.out)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    input_path: Path | None = None
+    if not args.calibrate_only:
+        if args.input is None:
+            parser.error(
+                "input Living the Grid JSON is required unless --calibrate-only or --clean-output"
+            )
+        input_path = Path(args.input)
+        if input_path.suffix.lower() != ".json":
+            parser.error("only Living the Grid JSON input is supported")
 
+    out_dir = resolve_output_dir(args.out, input_path)
+    out_dir.mkdir(parents=True, exist_ok=True)
     if args.calibrate_only:
         writer = generate_calibration(config)
         parts = writer.split_output(config.get("split_lines"))
@@ -60,14 +71,7 @@ def main() -> int:
         print(f"Wrote calibration macro to {out_dir}")
         return 0
 
-    if args.input is None:
-        parser.error(
-            "input Living the Grid JSON is required unless --calibrate-only or --clean-output"
-        )
-    input_path = Path(args.input)
-    if input_path.suffix.lower() != ".json":
-        parser.error("only Living the Grid JSON input is supported")
-
+    assert input_path is not None
     grid = load_living_grid_json(input_path)
     if args.preview_only:
         grid.preview.save(out_dir / "preview_quantized.png")
@@ -91,10 +95,45 @@ def main() -> int:
 
     colors = build_living_grid_colors(grid, str(config.get("color_order", "original-palette")))
     batches = make_batches(colors, int(config.get("palette_slots", 9)))
-    writer = generate_living_grid_macro(config, grid, batches)
-    parts = writer.split_output(config.get("split_lines"))
 
     grid.preview.save(out_dir / "preview_quantized.png")
+    if args.split_by_color:
+        writers = generate_color_split_macros(config, grid, colors)
+        part_files = write_color_parts(out_dir, writers, grid)
+        reconstructed = reconstruct_color_split_image(grid, writers)
+        reconstructed.save(out_dir / "reconstructed_from_macro.png")
+        write_palette_report(out_dir / "palette_report.csv", color_split_report(colors), grid)
+        write_common_outputs(
+            out_dir,
+            config,
+            canvas_size=(grid.width, grid.height),
+            manifest={
+                "mode": "living-grid",
+                "path_strategy": "nearest-runs",
+                "split_strategy": "color",
+                "input": str(input_path),
+                "input_source": grid.source,
+                "input_version": grid.version,
+                "brush": grid.brush,
+                "canvas": grid.canvas,
+                "parts": part_files,
+                "preview": "preview_quantized.png",
+                "reconstructed": "reconstructed_from_macro.png",
+                "palette_report": "palette_report.csv",
+                "palette_color_count": len(colors),
+                "batch_count": 0,
+                "total_lines": sum(len(writer.lines) for _color, writer in writers),
+                "total_frames": sum(writer.total_frames() for _color, writer in writers),
+            },
+        )
+        print(f"Wrote color-split Living the Grid macros to {out_dir}")
+        return 0
+
+    writer = generate_living_grid_macro(config, grid, batches)
+    parts = writer.split_output(config.get("split_lines"))
+    reconstructed = reconstruct_batched_image(grid, writer, flatten_batches(batches))
+    reconstructed.save(out_dir / "reconstructed_from_macro.png")
+
     write_palette_report(out_dir / "palette_report.csv", flatten_batches(batches), grid)
     part_files = write_parts(out_dir, "image_part", parts)
     write_common_outputs(
@@ -102,7 +141,9 @@ def main() -> int:
         config,
         canvas_size=(grid.width, grid.height),
         manifest={
-            "mode": str(config.get("mode", "safe-pixel")),
+            "mode": "living-grid",
+            "path_strategy": "nearest-runs",
+            "split_strategy": "lines",
             "input": str(input_path),
             "input_source": grid.source,
             "input_version": grid.version,
@@ -110,6 +151,7 @@ def main() -> int:
             "canvas": grid.canvas,
             "parts": part_files,
             "preview": "preview_quantized.png",
+            "reconstructed": "reconstructed_from_macro.png",
             "palette_report": "palette_report.csv",
             "palette_color_count": len(colors),
             "batch_count": len(batches),
@@ -129,8 +171,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", help="Path to config JSON")
     parser.add_argument(
         "--out",
-        default="out",
-        help="Output directory; relative paths are placed under ./out",
+        help=(
+            "Output directory; defaults to the input filename without extension. "
+            "Relative paths are placed under ./out"
+        ),
     )
     parser.add_argument("--palette-slots", type=int, help="Available game palette slots")
     parser.add_argument(
@@ -139,14 +183,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Order colors before assigning palette slots",
     )
     parser.add_argument(
-        "--mode",
-        choices=["safe-pixel", "nearest", "horizontal-runs"],
-        help="Drawing path mode",
-    )
-    parser.add_argument(
         "--split-lines",
         type=int,
         help="Maximum macro lines per part; 0 disables line-based splitting",
+    )
+    parser.add_argument(
+        "--split-by-color",
+        action="store_true",
+        help=(
+            "Write one macro txt per color; each file sets slot 0, draws that color, "
+            "then returns to top-left"
+        ),
     )
     parser.add_argument("--calibrate-only", action="store_true", help="Generate calibration macro")
     parser.add_argument(
@@ -190,7 +237,6 @@ def apply_cli_overrides(config: dict[str, Any], args: argparse.Namespace) -> Non
     mapping = {
         "palette_slots": args.palette_slots,
         "color_order": args.color_order,
-        "mode": args.mode,
         "split_lines": args.split_lines,
     }
     for key, value in mapping.items():
@@ -198,13 +244,19 @@ def apply_cli_overrides(config: dict[str, Any], args: argparse.Namespace) -> Non
             config[key] = value
 
 
-def resolve_output_dir(out_arg: str) -> Path:
-    requested = Path(out_arg)
+def resolve_output_dir(out_arg: str | None, input_path: Path | None = None) -> Path:
+    requested = Path(out_arg) if out_arg is not None else Path(default_output_name(input_path))
     if requested.is_absolute():
         return requested
     if requested.parts and requested.parts[0].lower() == "out":
         return ROOT / requested
     return OUTPUT_ROOT / requested
+
+
+def default_output_name(input_path: Path | None) -> str:
+    if input_path is None:
+        return "calibration"
+    return input_path.stem or "output"
 
 
 def clean_output() -> None:
@@ -252,7 +304,6 @@ def generate_living_grid_macro(
 ) -> MacroWriter:
     writer = MacroWriter(config)
     picker = ColorPicker(writer, config)
-    path_mode = str(config.get("mode", "safe-pixel"))
 
     for batch in batches:
         for batch_color in batch:
@@ -264,13 +315,81 @@ def generate_living_grid_macro(
             pixels = plan_color_pixels(
                 grid.indices,
                 batch_color.color.color_index,
-                mode=path_mode,
+                start=writer.canvas_position(),
             )
             for x, y in pixels:
                 writer.move_cursor_to(x, y)
                 writer.draw_pixel()
 
     return writer
+
+
+def generate_color_split_macros(
+    config: dict[str, Any],
+    grid: LivingGridData,
+    colors: list[PaletteColor],
+) -> list[tuple[PaletteColor, MacroWriter]]:
+    writers: list[tuple[PaletteColor, MacroWriter]] = []
+
+    for color in colors:
+        writer = MacroWriter(config)
+        picker = ColorPicker(writer, config)
+        palette_entry = grid.palette[color.color_index]
+
+        picker.set_current_palette_slot_press(palette_entry.press)
+        for x, y in plan_color_pixels(
+            grid.indices,
+            color.color_index,
+            start=writer.canvas_position(),
+        ):
+            writer.move_cursor_to(x, y)
+            writer.draw_pixel()
+
+        writer.move_cursor_to(0, 0)
+        writers.append((color, writer))
+
+    return writers
+
+
+def color_split_report(colors: list[PaletteColor]) -> list[BatchColor]:
+    return [
+        BatchColor(color=color, batch_index=index, assigned_slot=0)
+        for index, color in enumerate(colors)
+    ]
+
+
+def reconstruct_color_split_image(
+    grid: LivingGridData,
+    writers: list[tuple[PaletteColor, MacroWriter]],
+) -> Image.Image:
+    image = Image.new("RGBA", (grid.width, grid.height), (0, 0, 0, 0))
+    pixels = image.load()
+    for color, writer in writers:
+        rgba = (*color.rgb, 255)
+        for x, y in writer.draw_events:
+            if 0 <= x < grid.width and 0 <= y < grid.height:
+                pixels[x, y] = rgba
+    return image
+
+
+def reconstruct_batched_image(
+    grid: LivingGridData,
+    writer: MacroWriter,
+    batch_colors: list[BatchColor],
+) -> Image.Image:
+    image = Image.new("RGBA", (grid.width, grid.height), (0, 0, 0, 0))
+    pixels = image.load()
+    event_index = 0
+    for batch_color in batch_colors:
+        rgba = (*batch_color.color.rgb, 255)
+        for _ in range(batch_color.color.pixel_count):
+            if event_index >= len(writer.draw_events):
+                break
+            x, y = writer.draw_events[event_index]
+            event_index += 1
+            if 0 <= x < grid.width and 0 <= y < grid.height:
+                pixels[x, y] = rgba
+    return image
 
 
 def _luminance(rgb: tuple[int, int, int]) -> float:
@@ -324,6 +443,32 @@ def write_parts(out_dir: Path, prefix: str, parts: list[list[str]]) -> list[dict
                 "file": filename,
                 "line_count": len(lines),
                 "frame_count": sum(_line_frames(line) for line in lines),
+            }
+        )
+    return written
+
+
+def write_color_parts(
+    out_dir: Path,
+    writers: list[tuple[PaletteColor, MacroWriter]],
+    grid: LivingGridData,
+) -> list[dict[str, Any]]:
+    written: list[dict[str, Any]] = []
+    for index, (color, writer) in enumerate(writers, start=1):
+        entry = grid.palette[color.color_index]
+        filename = f"color_{index:02d}_{entry.hex.lstrip('#')}.txt"
+        path = out_dir / filename
+        lines = [line.text for line in writer.lines]
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        written.append(
+            {
+                "file": filename,
+                "line_count": len(lines),
+                "frame_count": writer.total_frames(),
+                "color_index": color.color_index,
+                "hex": entry.hex,
+                "pixel_count": color.pixel_count,
+                "assigned_slot": 0,
             }
         )
     return written

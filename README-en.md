@@ -1,259 +1,157 @@
 # tomodachi-macrogen
 
-PC-side Python 3.13+ macro generator for Tomodachi Life / Tomodachi Life: Living the Dream face paint automation.
+Convert [Living the Grid](https://living-the-grid.com/) JSON exports into GLaMS/SwiCC `.txt` macros for Tomodachi Life face paint automation.
 
-This tool now accepts only JSON exported by [Living the Grid](https://living-the-grid.com/). Image quantization, game-palette matching, and H/S/B press counts are handled by Living the Grid; this tool converts the JSON into GLaMS/SwiCC `.txt` macro scripts.
+This project no longer accepts image input. Living the Grid handles quantization, palette matching, and H/S/B press counts; this tool only generates runnable macros.
 
-The reason is practical: Living the Grid's `game` palette and H/S/B press counts target the game's non-linear color picker. That is more reliable than local quantization plus naive HSV conversion.
+Chinese README: [README.md](README.md).
 
-## Recommended Workflow
+## Workflow
 
-1. Open <https://living-the-grid.com/>.
-2. Upload your image.
-3. Select `square`.
-4. Select `smooth`.
-5. Select `1px`.
-6. Set `max colours = 12` or your preferred color count.
-7. Select the `game` palette.
-8. Export `JSON (per-pixel data)`.
-9. Run this tool on that JSON.
-
-Example:
+1. Upload an image to Living the Grid.
+2. Select `square`, `smooth`, `1px`, and the `game` palette.
+3. Set `max colours`, for example `12`.
+4. Export `JSON (per-pixel data)`.
+5. Generate GLaMS macros with this tool.
+6. Run the generated `.txt` files in GLaMS in order.
 
 ```bash
-uv run python tomodachi_macrogen.py C:\Users\duola\Downloads\living-the-grid-1777233657767.json --out doll
+uv run python tomodachi_macrogen.py input.json
 ```
 
-Relative outputs are placed under the project-level `out/` directory, so this writes to:
-
-```text
-out/doll
-```
-
-## Hardware Workflow
-
-- Board A: plug into the Switch or Switch 2 Dock and flash the SwiCC_RP2040 main firmware. It emulates a Switch Pro Controller.
-- Board B: plug into the computer over USB and flash `SwiCC_UART_Bridge.uf2`. It acts as the USB-UART bridge.
-- Board A GPIO0/TX -> Board B GPIO1/RX.
-- Board A GPIO1/RX -> Board B GPIO0/TX.
-- Board A GND -> Board B GND.
-- Do not connect 5V or 3V3 between the boards.
-
-Enable Pro Controller Wired Communication in the Switch / Switch 2 system settings.
-
-## Using GLaMS
-
-GLaMS repository: <https://github.com/knflrpn/GLaMS>
-
-This repository tracks GLaMS as a Git submodule at `external/GLaMS`. After cloning this repository, fetch it with:
-
-```bash
-git submodule update --init --recursive
-```
-
-Update it to the latest upstream GLaMS revision with:
-
-```bash
-git submodule update --remote external/GLaMS
-```
-
-This tool only generates `.txt` macro files readable by GLaMS/SwiCC. It does not control the serial port directly. Basic flow:
-
-1. Wire the two RP2040 boards as described in the hardware workflow.
-2. Open `external/GLaMS/macros.html` in Chrome or Edge.
-3. Select the serial port connected to Board B, the board flashed with `SwiCC_UART_Bridge.uf2`.
-4. Complete the in-game setup before starting the script.
-5. In GLaMS, load and run `image_part1.txt`, `image_part2.txt`, and subsequent files in numeric order.
-6. Wait for each part to finish before running the next one. Do not skip or reorder parts.
+Default output goes to `out/input/`. For example, `abc.json` writes to `out/abc/`.
 
 ## Install
-
-Install `uv` first. Prefer your OS package manager; `pip install --user uv` is a fallback.
 
 ```bash
 uv venv --python 3.13
 uv sync
 ```
 
-`pyproject.toml` is the source of dependency and tooling configuration. `requirements.txt` is only a compatibility export.
-
-## CLI Options
-
-- `input`: Living the Grid JSON file.
-- `--config CONFIG`: read an extra JSON config file and override values from `config.default.json`.
-- `--out OUT`: output directory, defaults to `out`. Relative paths are placed under the project-level `out/` directory; for example, `--out doll` writes to `out/doll`.
-- `--palette-slots N`: number of available in-game palette slots. The default is `9`.
-- `--color-order frequency|original-palette|luminance|hue`: color batching and drawing order. Defaults to `original-palette`, the same order as the Living the Grid JSON / UI palette.
-- `--mode safe-pixel|nearest|horizontal-runs`: drawing path mode. Defaults to `safe-pixel`.
-- `--split-lines N`: maximum macro lines per part file; `0` disables line-based splitting and writes one part.
-- `--calibrate-only`: generate calibration scripts only.
-- `--clean-output`: delete all generated files under the project `out/` directory and exit.
-- `--clean-cache`: delete local Python/tool caches such as `.ruff_cache` and `__pycache__`; can be combined with `--clean-output`.
-- `--preview-only`: export only `preview_quantized.png` from the JSON for quick verification; no macro parts are generated.
-
-## Common Commands
-
-Generate macros from Living the Grid JSON:
-
-```bash
-uv run python tomodachi_macrogen.py input.json --out doll --split-lines 50000 --mode safe-pixel
-```
-
-Disable splitting and write only `image_part1.txt`:
-
-```bash
-uv run python tomodachi_macrogen.py input.json --out doll --split-lines 0
-```
-
-Generate calibration macros only:
-
-```bash
-uv run python tomodachi_macrogen.py --out calibration --calibrate-only
-```
-
-Clean all outputs:
-
-```bash
-uv run python tomodachi_macrogen.py --clean-output
-```
-
-Clean outputs and caches together:
-
-```bash
-uv run python tomodachi_macrogen.py --clean-output --clean-cache
-```
-
-Export preview only:
-
-```bash
-uv run python tomodachi_macrogen.py tests/fixtures/example.json --out preview_check --preview-only
-```
-
-Installed command entry point:
-
-```bash
-uv run tomodachi-macrogen input.json --out doll
-```
-
-## Input JSON
-
-The JSON must include:
-
-- `source: "living-the-grid.com"`
-- `width`
-- `height`
-- `brush`
-- `canvas`
-- `palette`
-- `pixels`
-
-Each `palette[]` entry must include:
-
-- `hex`
-- `rgb`
-- `press.h`
-- `press.s`
-- `press.b`
-
-This tool uses `press.h/s/b` directly. It does not convert RGB through standard HSV for JSON input.
-
-The default color order uses the original `palette[]` order, matching the swatch order shown in the Living the Grid UI.
-
-## Output Files
-
-JSON input mode generates:
-
-- `image_part1.txt`, `image_part2.txt`, and so on.
-- `preview_quantized.png`: preview reconstructed from JSON palette and pixels.
-- `palette_report.csv`: color, HSV, Living the Grid press counts, pixel count, batch, and slot assignment report.
-- `manifest.json`: summary of the generation run.
-- `README_RUN.md`: Chinese run instructions.
-- `README_RUN-en.md`: English run instructions.
-- `config_used.json`: the actual config after merging defaults, user config, and CLI overrides.
-
-Calibration mode generates:
-
-- `calibration_part1.txt`, `calibration_part2.txt`, and so on.
-- `manifest.json`
-- `README_RUN.md`
-- `README_RUN-en.md`
-- `config_used.json`
-
-Select and run the generated `.txt` files in GLaMS in numeric order.
-
-## In-Game Setup
-
-Before running generated scripts:
-
-1. Enter the Tomodachi Life face paint drawing screen.
-2. Select the thinnest square pixel brush.
-3. Press `Y` to open the color sidebar / palette.
-4. Select white or the tutorial's initial color.
-5. Press the controller R shoulder button to open the full HSB picker.
-6. Reset the picker before running: hold ZL until the Hue cursor is fully left.
-7. Hold D-pad left + down until the color pad cursor is fully bottom-left.
-8. Return to the canvas.
-9. Move the brush cursor to the top-left first pixel of the canvas.
-10. Run the generated `.txt` macro scripts in GLaMS.
-
-Living the Grid H/S/B meaning:
-
-- `H`: bottom hue strip, range `0..201`, `202` total steps. Starting from the far-left default, press `ZR` to increase.
-- `S`: horizontal saturation on the 2-D pad, range `0..211`, `212` total steps. Starting from bottom-left, press D-pad right to increase.
-- `B`: vertical brightness on the 2-D pad, range `0..110`, `111` total steps. Starting from bottom-left, press D-pad up to increase.
-
-This tool uses `press.h/s/b` from the JSON directly. It does not convert RGB through standard HSV.
-
-## Config
-
-Defaults live in `config.default.json`. You can pass your own config file per run:
-
-```bash
-uv run python tomodachi_macrogen.py input.json --config my_config.json --out doll
-```
-
-If colors are inaccurate, tune:
-
-- `anchor_colour_rect_method`
-- `hue_slider_steps`: only affects legacy RGB->HSV calibration colors; JSON input uses `press.h` directly.
-- `colour_rect_width` / `colour_rect_height`: JSON input does not use these to compute colors; they are used only for `anchor_colour_rect_method=dpad_steps` or calibration mode.
-- `timing.colour_rect_anchor_hold_frames`
-- `timing.colour_rect_anchor_settle_frames`
-- `timing.hue_anchor_hold_frames`
-- `timing.hue_step_hold_frames`
-- `timing.colour_rect_step_hold_frames`
-- `timing.menu_open_frames`
-
-If drawing position drifts or inputs are missed, tune:
-
-- `canvas_origin_x`
-- `canvas_origin_y`
-- `timing.movement_hold_frames`
-- `timing.movement_release_frames`
-- `timing.draw_hold_frames`
-- `timing.draw_release_frames`
-
-## GLaMS/SwiCC Button Names
-
-- `A/B/X/Y`: face buttons.
-- `U/D/L/R`: D-pad up/down/left/right.
-- `L1/R1`: L/R shoulder buttons.
-- `L2/R2`: ZL/ZR triggers.
-
-Important: in GLaMS, `R` means D-pad right, not the R shoulder button. The R shoulder button must be written as `R1`; ZL/ZR must be written as `L2/R2`.
-
-## Drawing Modes
-
-- `safe-pixel`: default mode. Slowest but most reliable. Moves the cursor and taps `A` once per pixel.
-- `nearest`: uses a nearest-neighbor path for small point sets; falls back to safe ordering for large sets.
-- `horizontal-runs`: orders horizontal contiguous runs together, but still draws with safe per-pixel taps.
-
-Use `safe-pixel` until real hardware timing has been calibrated.
-
-## Development And Verification
+Development checks:
 
 ```bash
 uv sync --group dev
 uv run ruff check .
 uv run python -m unittest discover -s tests
 ```
+
+## Common Commands
+
+```bash
+# Generate macros, default split is 50000 lines per part
+uv run python tomodachi_macrogen.py input.json
+
+# Disable line splitting
+uv run python tomodachi_macrogen.py input.json --split-lines 0
+
+# Split into one file per color
+uv run python tomodachi_macrogen.py input.json --split-by-color
+
+# Export preview only
+uv run python tomodachi_macrogen.py input.json --preview-only
+
+# Use slower hardware timings
+uv run python tomodachi_macrogen.py input.json --config config.slow.json
+
+# Clean generated outputs and caches
+uv run python tomodachi_macrogen.py --clean-output --clean-cache
+```
+
+## CLI
+
+- `input`: Living the Grid JSON.
+- `--out OUT`: output directory; relative paths are placed under project `out/`.
+- `--config CONFIG`: extra config JSON overriding `config.default.json`.
+- `--palette-slots N`: available in-game palette slots, default `9`.
+- `--color-order frequency|original-palette|luminance|hue`: color order, default `original-palette`, matching Living the Grid UI order.
+- `--split-lines N`: max lines per part; `0` disables splitting.
+- `--split-by-color`: one file per color, useful for rerunning a single color.
+- `--calibrate-only`: generate calibration macros only.
+- `--preview-only`: generate `preview_quantized.png` only.
+- `--clean-output`: delete generated outputs under `out/`.
+- `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
+
+The drawing path is fixed to same-color horizontal run planning. Path mode flags were removed.
+
+## Outputs
+
+- `image_part*.txt`: normal macro parts.
+- `color_XX_*.txt`: single-color parts from `--split-by-color`.
+- `preview_quantized.png`: preview reconstructed from JSON.
+- `reconstructed_from_macro.png`: image reconstructed from generated draw coordinates.
+- `palette_report.csv`: colors, H/S/B values, pixel counts, and slot assignment.
+- `manifest.json`: generation summary.
+- `config_used.json`: merged runtime config.
+- `README_RUN.md` / `README_RUN-en.md`: run instructions.
+
+## GLaMS
+
+GLaMS: <https://github.com/knflrpn/GLaMS>
+
+This repository keeps GLaMS at `external/GLaMS`:
+
+```bash
+git submodule update --init --recursive
+git submodule update --remote external/GLaMS
+```
+
+Use the standard page `external/GLaMS/macros.html`. Paste generated `.txt` content into the large right-side `commands` textarea. The left-side `recorded-inputs` textarea is for recording output, not for running macros.
+
+To pair the controller, run this first in `commands`:
+
+```text
+{A} 10
+{} 60
+{L1 R1} 10
+{} 30
+{A} 10
+{} 10
+```
+
+Run multiple parts one by one in filename order.
+
+## Hardware
+
+- Board A plugs into the Switch / Dock and runs the SwiCC_RP2040 main firmware.
+- Board B plugs into the computer and runs `SwiCC_UART_Bridge.uf2`.
+- Board A GPIO0/TX connects to Board B GPIO1/RX.
+- Board A GPIO1/RX connects to Board B GPIO0/TX.
+- Board A GND connects to Board B GND.
+- Do not connect 5V or 3V3 between boards.
+- For Waveshare RP2040-Zero, wire by GPIO labels, not guessed physical position.
+
+![Waveshare RP2040-Zero pinout](https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg)
+
+Firmware:
+
+- SwiCC_RP2040: <https://github.com/knflrpn/SwiCC_RP2040/releases>
+- UART bridge: <https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2>
+
+To flash UF2, hold `BOOTSEL` while plugging USB, then copy the matching `.uf2` to the `RPI-RP2` drive.
+
+Enable Pro Controller Wired Communication in Switch system settings.
+
+## In-Game Setup
+
+1. Open the face paint drawing screen.
+2. Select the thinnest square pixel brush.
+3. Move the brush cursor to the top-left first pixel.
+4. Do not manually change the selected palette swatch before running, especially with `--split-by-color`.
+
+The generated macro opens the palette, enters the full HSB picker, resets Hue and the color pad, then uses JSON `press.h/s/b` values.
+
+## Config
+
+Defaults live in `config.default.json`. If hardware misses inputs or runs too fast, try:
+
+```bash
+uv run python tomodachi_macrogen.py input.json --config config.slow.json
+```
+
+Common tuning fields:
+
+- `timing.*`: button, movement, and menu waits.
+- `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
+- `canvas_origin_x` / `canvas_origin_y`: canvas origin offset.
+- `split_lines`: default part size.

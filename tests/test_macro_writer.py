@@ -35,6 +35,36 @@ class TestMacroWriter(unittest.TestCase):
             ["{R} 1", "{} 1", "{R} 1", "{} 1", "{D} 1", "{} 1"],
         )
 
+    def test_move_cursor_can_pause_between_movement_chunks(self) -> None:
+        writer = MacroWriter(
+            {
+                "timing": {
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                    "movement_chunk_size": 2,
+                    "movement_chunk_settle_frames": 5,
+                }
+            }
+        )
+        writer.move_cursor_to(5, 0)
+        self.assertEqual(
+            [line.text for line in writer.lines],
+            [
+                "{R} 1",
+                "{} 1",
+                "{R} 1",
+                "{} 1",
+                "{} 5",
+                "{R} 1",
+                "{} 1",
+                "{R} 1",
+                "{} 1",
+                "{} 5",
+                "{R} 1",
+                "{} 1",
+            ],
+        )
+
     def test_split_lines_zero_disables_splitting(self) -> None:
         writer = MacroWriter()
         writer.tap("A")

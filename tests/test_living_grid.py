@@ -31,6 +31,16 @@ class TestLivingGrid(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "outside palette range"):
             load_living_grid_json(path)
 
+    def test_allows_transparent_null_pixels(self) -> None:
+        path = _write_fixture({"pixels": [[0, None], [1, 0]]})
+
+        grid = load_living_grid_json(path)
+
+        self.assertEqual(grid.indices[0][1], None)
+        self.assertEqual(grid.palette[0].pixel_count, 2)
+        self.assertEqual(grid.palette[1].pixel_count, 1)
+        self.assertEqual(grid.preview.getpixel((1, 0)), (0, 0, 0, 0))
+
 
 def _write_fixture(overrides: dict[str, object] | None = None) -> Path:
     data = {

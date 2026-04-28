@@ -12,6 +12,7 @@ class MacroWriter:
         self.lines: list[MacroLine] = []
         self.current_x = int(self.config.get("canvas_origin_x", 0))
         self.current_y = int(self.config.get("canvas_origin_y", 0))
+        self.draw_events: list[tuple[int, int]] = []
 
     def tap(
         self,
@@ -65,7 +66,14 @@ class MacroWriter:
         self.current_x = target_x
         self.current_y = target_y
 
+    def canvas_position(self) -> tuple[int, int]:
+        return (
+            self.current_x - int(self.config.get("canvas_origin_x", 0)),
+            self.current_y - int(self.config.get("canvas_origin_y", 0)),
+        )
+
     def draw_pixel(self) -> None:
+        self.draw_events.append(self.canvas_position())
         hold = int(self.timing.get("draw_hold_frames", self.timing.get("tap_hold_frames", 2)))
         release = int(
             self.timing.get("draw_release_frames", self.timing.get("tap_release_frames", 1))
@@ -85,8 +93,13 @@ class MacroWriter:
     def _move_canvas_direction(self, direction: str, steps: int) -> None:
         hold = int(self.timing.get("movement_hold_frames", 1))
         release = int(self.timing.get("movement_release_frames", 1))
-        for _ in range(steps):
+        chunk_size = int(self.timing.get("movement_chunk_size", 0))
+        chunk_settle = int(self.timing.get("movement_chunk_settle_frames", 0))
+        for step in range(steps):
             self.tap(direction, hold, release)
+            if chunk_size > 0 and chunk_settle > 0 and step + 1 < steps:
+                if (step + 1) % chunk_size == 0:
+                    self.wait(chunk_settle)
 
     def _neutral_stick(self) -> int:
         return int(self.config.get("stick", {}).get("neutral", 128))

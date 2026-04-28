@@ -30,7 +30,7 @@ class LivingGridData:
     brush: dict[str, Any]
     canvas: dict[str, Any]
     palette: list[LivingGridPaletteEntry]
-    indices: list[list[int]]
+    indices: list[list[int | None]]
     preview: Image.Image
 
 
@@ -132,6 +132,8 @@ def _count_pixels(
         if not isinstance(row, list) or len(row) != width:
             raise ValueError(f"pixels[{y}] must contain {width} columns")
         for value in row:
+            if value is None:
+                continue
             if not isinstance(value, int) or value < 0 or value >= palette_size:
                 raise ValueError(f"pixel index {value!r} is outside palette range")
             counts[value] = counts.get(value, 0) + 1
@@ -141,13 +143,16 @@ def _count_pixels(
 def _make_preview(
     width: int,
     height: int,
-    pixels: list[list[int]],
+    pixels: list[list[int | None]],
     palette: list[LivingGridPaletteEntry],
 ) -> Image.Image:
     image = Image.new("RGBA", (width, height))
     preview_pixels: list[tuple[int, int, int, int]] = []
     for row in pixels:
         for color_index in row:
+            if color_index is None:
+                preview_pixels.append((0, 0, 0, 0))
+                continue
             r, g, b = palette[color_index].rgb
             preview_pixels.append((r, g, b, 255))
     image.putdata(preview_pixels)
