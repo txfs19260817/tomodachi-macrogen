@@ -8,6 +8,12 @@
 - 左侧 `recorded-inputs`：录制输出，不用于运行宏。
 - `vsync-delay`：先保持默认 `-1`。
 
+也可以不用网页，直接走串口：
+
+```bash
+uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-controller
+```
+
 ## 配对手柄
 
 先在 `commands` 运行：
@@ -27,16 +33,15 @@
 
 1. 进入 face paint 绘制界面。
 2. 选择最细方形像素笔刷。
-3. 把画笔移动到画布左上角第一个像素。
+3. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
 4. 不要手动切换当前色板格，特别是运行 `color_*.txt` 时。
 
-宏会自己打开色板、进入 HSB 选色器、复位 Hue 和颜色方块，再设置颜色。
+宏会自己打开色板、进入 HSB 选色器、复位 Hue 和颜色方块，再设置颜色。`color_*.txt` 开头会硬复位到画布左上，不在结尾主动回归。
 
 ## 运行文件
 
 - 普通输出：按顺序运行 `image_part1.txt`、`image_part2.txt`。
 - 按颜色输出：按顺序运行 `color_01_*.txt`、`color_02_*.txt`。
-- 校准输出：运行 `calibration_part*.txt`。
 
 不要跳过或打乱顺序。一个 part 跑完后，再粘贴下一个 part。
 

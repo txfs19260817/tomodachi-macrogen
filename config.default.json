@@ -7,8 +7,9 @@
   "colour_rect_width": 212,
   "colour_rect_height": 111,
   "anchor_colour_rect_method": "analog",
+  "canvas_reset_right_steps": 192,
+  "canvas_reset_down_steps": 77,
   "split_lines": 50000,
-  "calibration_block_size": 3,
   "timing": {
     "tap_hold_frames": 6,
     "tap_release_frames": 6,
@@ -18,6 +19,8 @@
     "movement_release_frames": 4,
     "movement_chunk_size": 5,
     "movement_chunk_settle_frames": 20,
+    "canvas_reset_hold_frames": 420,
+    "canvas_reset_settle_frames": 25,
     "menu_open_frames": 45,
     "menu_close_frames": 45,
     "screen_settle_frames": 30,
@@ -30,7 +33,7 @@
     "hue_anchor_release_frames": 25,
     "hue_step_hold_frames": 6,
     "hue_step_release_frames": 5,
-    "colour_rect_anchor_hold_frames": 480,
+    "colour_rect_anchor_hold_frames": 360,
     "colour_rect_anchor_settle_frames": 25,
     "colour_rect_step_hold_frames": 5,
     "colour_rect_step_release_frames": 4

@@ -9,7 +9,7 @@ from typing import Any
 
 from PIL import Image
 
-from src.color_picker import CALIBRATION_COLORS, ColorPicker
+from src.color_picker import ColorPicker
 from src.living_grid import LivingGridData, load_living_grid_json
 from src.macro_writer import MacroWriter
 from src.palette import BatchColor, PaletteColor, flatten_batches, make_batches, rgb_to_hsv
@@ -41,58 +41,16 @@ def main() -> int:
     config = load_config(args.config)
     apply_cli_overrides(config, args)
 
-    input_path: Path | None = None
-    if not args.calibrate_only:
-        if args.input is None:
-            parser.error(
-                "input Living the Grid JSON is required unless --calibrate-only or --clean-output"
-            )
-        input_path = Path(args.input)
-        if input_path.suffix.lower() != ".json":
-            parser.error("only Living the Grid JSON input is supported")
+    if args.input is None:
+        parser.error("input Living the Grid JSON is required unless cleaning outputs/caches")
+    input_path = Path(args.input)
+    if input_path.suffix.lower() != ".json":
+        parser.error("only Living the Grid JSON input is supported")
 
     out_dir = resolve_output_dir(args.out, input_path)
     out_dir.mkdir(parents=True, exist_ok=True)
-    if args.calibrate_only:
-        writer = generate_calibration(config)
-        parts = writer.split_output(config.get("split_lines"))
-        part_files = write_parts(out_dir, "calibration_part", parts)
-        write_common_outputs(
-            out_dir,
-            config,
-            canvas_size=(256, 256),
-            manifest={
-                "mode": "calibrate-only",
-                "parts": part_files,
-                "total_lines": len(writer.lines),
-                "total_frames": writer.total_frames(),
-            },
-        )
-        print(f"Wrote calibration macro to {out_dir}")
-        return 0
 
-    assert input_path is not None
     grid = load_living_grid_json(input_path)
-    if args.preview_only:
-        grid.preview.save(out_dir / "preview_quantized.png")
-        write_common_outputs(
-            out_dir,
-            config,
-            canvas_size=(grid.width, grid.height),
-            manifest={
-                "mode": "preview-only",
-                "input": str(input_path),
-                "input_source": grid.source,
-                "input_version": grid.version,
-                "brush": grid.brush,
-                "canvas": grid.canvas,
-                "preview": "preview_quantized.png",
-                "palette_color_count": len(grid.palette),
-            },
-        )
-        print(f"Wrote preview to {out_dir / 'preview_quantized.png'}")
-        return 0
-
     colors = build_living_grid_colors(grid, str(config.get("color_order", "original-palette")))
     batches = make_batches(colors, int(config.get("palette_slots", 9)))
 
@@ -195,7 +153,6 @@ def build_parser() -> argparse.ArgumentParser:
             "then returns to top-left"
         ),
     )
-    parser.add_argument("--calibrate-only", action="store_true", help="Generate calibration macro")
     parser.add_argument(
         "--clean-output",
         action="store_true",
@@ -205,11 +162,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--clean-cache",
         action="store_true",
         help="Delete local Python/tool caches and exit",
-    )
-    parser.add_argument(
-        "--preview-only",
-        action="store_true",
-        help="Only export preview_quantized.png from Living the Grid JSON and exit",
     )
     return parser
 
@@ -244,7 +196,7 @@ def apply_cli_overrides(config: dict[str, Any], args: argparse.Namespace) -> Non
             config[key] = value
 
 
-def resolve_output_dir(out_arg: str | None, input_path: Path | None = None) -> Path:
+def resolve_output_dir(out_arg: str | None, input_path: Path) -> Path:
     requested = Path(out_arg) if out_arg is not None else Path(default_output_name(input_path))
     if requested.is_absolute():
         return requested
@@ -253,9 +205,7 @@ def resolve_output_dir(out_arg: str | None, input_path: Path | None = None) -> P
     return OUTPUT_ROOT / requested
 
 
-def default_output_name(input_path: Path | None) -> str:
-    if input_path is None:
-        return "calibration"
+def default_output_name(input_path: Path) -> str:
     return input_path.stem or "output"
 
 
@@ -337,6 +287,7 @@ def generate_color_split_macros(
         palette_entry = grid.palette[color.color_index]
 
         picker.set_current_palette_slot_press(palette_entry.press)
+        writer.reset_canvas_to_origin()
         for x, y in plan_color_pixels(
             grid.indices,
             color.color_index,
@@ -345,7 +296,6 @@ def generate_color_split_macros(
             writer.move_cursor_to(x, y)
             writer.draw_pixel()
 
-        writer.move_cursor_to(0, 0)
         writers.append((color, writer))
 
     return writers
@@ -395,41 +345,6 @@ def reconstruct_batched_image(
 def _luminance(rgb: tuple[int, int, int]) -> float:
     r, g, b = rgb
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-
-def generate_calibration(config: dict[str, Any]) -> MacroWriter:
-    writer = MacroWriter(config)
-    picker = ColorPicker(writer, config)
-    palette_slots = int(config.get("palette_slots", 9))
-
-    writer.tap("Y")
-    writer.wait(int(config.get("timing", {}).get("menu_open_frames", 8)))
-    writer.tap("B")
-    writer.wait(int(config.get("timing", {}).get("menu_close_frames", 8)))
-
-    for slot_index in range(palette_slots):
-        writer.tap("Y")
-        writer.wait(int(config.get("timing", {}).get("menu_open_frames", 8)))
-        picker.navigate_to_slot(slot_index)
-        writer.tap("B")
-        writer.wait(int(config.get("timing", {}).get("menu_close_frames", 8)))
-
-    for slot_index, (_name, rgb) in enumerate(CALIBRATION_COLORS[:palette_slots]):
-        picker.set_palette_slot_colour(slot_index, rgb)
-
-    block_size = int(config.get("calibration_block_size", 3))
-    columns = 3
-    spacing = block_size + 1
-    for slot_index in range(min(palette_slots, len(CALIBRATION_COLORS))):
-        picker.activate_palette_slot(slot_index, force=True)
-        base_x = (slot_index % columns) * spacing
-        base_y = (slot_index // columns) * spacing
-        for y in range(block_size):
-            for x in range(block_size):
-                writer.move_cursor_to(base_x + x, base_y + y)
-                writer.draw_pixel()
-
-    return writer
 
 
 def write_parts(out_dir: Path, prefix: str, parts: list[list[str]]) -> list[dict[str, Any]]:

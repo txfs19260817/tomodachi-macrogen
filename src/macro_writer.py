@@ -43,10 +43,21 @@ class MacroWriter:
         for _ in range(max(0, steps)):
             self.tap(normalized, hold, release)
 
-    def stick(self, lx: int, ly: int, rx: int, ry: int, frames: int) -> None:
+    def stick(
+        self,
+        lx: int,
+        ly: int,
+        rx: int,
+        ry: int,
+        frames: int,
+        *,
+        buttons: str | Iterable[str] | None = None,
+    ) -> None:
         neutral = self._neutral_stick()
         safe = (lx, ly, rx, ry) == (neutral, neutral, neutral, neutral)
-        self.lines.append(format_stick(lx, ly, rx, ry, frames, safe_split_after=safe))
+        self.lines.append(
+            format_stick(lx, ly, rx, ry, frames, buttons=buttons, safe_split_after=safe)
+        )
 
     def move_cursor_to(self, x: int, y: int) -> None:
         target_x = int(x) + int(self.config.get("canvas_origin_x", 0))
@@ -65,6 +76,21 @@ class MacroWriter:
 
         self.current_x = target_x
         self.current_y = target_y
+
+    def reset_canvas_to_origin(self) -> None:
+        neutral = self._neutral_stick()
+        stick_min = int(self.config.get("stick", {}).get("min", 0))
+        hold_frames = int(self.timing.get("canvas_reset_hold_frames", 180))
+        settle_frames = int(self.timing.get("canvas_reset_settle_frames", 25))
+        right_steps = int(self.config.get("canvas_reset_right_steps", 192))
+        down_steps = int(self.config.get("canvas_reset_down_steps", 77))
+
+        self.stick(stick_min, stick_min, neutral, neutral, hold_frames)
+        self.stick(neutral, neutral, neutral, neutral, settle_frames)
+        self._move_canvas_direction("R", right_steps)
+        self._move_canvas_direction("D", down_steps)
+        self.current_x = int(self.config.get("canvas_origin_x", 0))
+        self.current_y = int(self.config.get("canvas_origin_y", 0))
 
     def canvas_position(self) -> tuple[int, int]:
         return (

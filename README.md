@@ -4,7 +4,7 @@
 
 本项目不再处理图片输入。图片量化、调色板和 H/S/B 按键次数交给 Living the Grid；这里只负责生成可运行宏。
 
-英文文档见 [README-en.md](README-en.md)。
+English documentation: [README-en.md](README-en.md).
 
 ## 流程
 
@@ -48,12 +48,26 @@ uv run python tomodachi_macrogen.py input.json --split-lines 0
 # 按颜色拆分，一个 txt 只画一种颜色
 uv run python tomodachi_macrogen.py input.json --split-by-color
 
-# 只导出预览图，快速检查 JSON
-uv run python tomodachi_macrogen.py input.json --preview-only
-
 # 清理输出和缓存
 uv run python tomodachi_macrogen.py --clean-output --clean-cache
 ```
+
+## Python 串口发送
+
+可以不用 GLaMS 网页，直接用 Python 发送生成的 `.txt`：
+
+```bash
+# 查看串口
+uv run python swicc_runner.py --list-ports
+
+# 先检查文件顺序和编码预览，不碰串口
+uv run python swicc_runner.py out/nkidhr/color_*.txt --dry-run
+
+# 匹配手柄后按文件名顺序发送
+uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-controller
+```
+
+这个 runner 复刻 GLaMS 的 `+Q` 编码和 `+GQF` 队列轮询，但不包含网页的手柄显示和录制功能。
 
 ## CLI
 
@@ -64,12 +78,19 @@ uv run python tomodachi_macrogen.py --clean-output --clean-cache
 - `--color-order frequency|original-palette|luminance|hue`：颜色顺序，默认 `original-palette`，也就是 Living the Grid UI 顺序。
 - `--split-lines N`：每个 part 最多多少行；`0` 表示禁用切分。
 - `--split-by-color`：一个颜色一个文件，方便单独重跑某个颜色。
-- `--calibrate-only`：只生成校准宏。
-- `--preview-only`：只生成 `preview_quantized.png`。
 - `--clean-output`：删除 `out/` 下的生成结果。
 - `--clean-cache`：删除 `.ruff_cache`、`__pycache__` 等缓存。
 
 绘图路径固定为同色水平连续段规划，不再暴露路径模式 flag。
+
+## swicc_runner.py CLI
+
+- `files`：生成的 `.txt` 文件或 glob，例如 `out/nkidhr/color_*.txt`。
+- `--list-ports`：列出可用串口。
+- `--port COM5`：选择 B 板 USB-UART 串口。
+- `--match-controller`：发送匹配手柄宏。
+- `--dry-run`：只解析和预览，不访问串口。
+- `--vsync-delay N`：默认 `-1`，即禁用 VSYNC delay。
 
 ## 输出
 
@@ -133,10 +154,10 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 
 1. 进入 face paint 绘制界面。
 2. 选择最细方形像素笔刷。
-3. 把画笔移动到画布左上角第一个像素。
+3. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
 4. 运行宏前不要手动改变当前色板格，特别是 `--split-by-color`。
 
-生成的宏会负责打开色板、进入完整 HSB 选色器、复位 Hue 和颜色方块，再按 JSON 里的 `press.h/s/b` 调色。
+生成的宏会负责打开色板、进入完整 HSB 选色器、复位 Hue 和颜色方块，再按 JSON 里的 `press.h/s/b` 调色。`color_*.txt` 会在开头硬复位到画布左上：左上推摇杆 7 秒，再向右 192、向下 77。
 
 ## 配置
 
@@ -146,5 +167,6 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 
 - `timing.*`：按键、移动、菜单等待时间。
 - `movement_chunk_size` / `movement_chunk_settle_frames`：长距离移动时分块停顿。
-- `canvas_origin_x` / `canvas_origin_y`：画布起点偏移。
+- `canvas_reset_right_steps` / `canvas_reset_down_steps`：`color_*.txt` 开头硬复位后的回退步数。
+- `timing.canvas_reset_*`：`color_*.txt` 开头硬复位的摇杆保持和停顿时间。
 - `split_lines`：默认 part 行数。

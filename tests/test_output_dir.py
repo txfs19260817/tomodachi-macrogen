@@ -11,9 +11,6 @@ class TestOutputDir(unittest.TestCase):
             OUTPUT_ROOT / "example",
         )
 
-    def test_default_without_input_uses_calibration(self) -> None:
-        self.assertEqual(resolve_output_dir(None), OUTPUT_ROOT / "calibration")
-
     def test_relative_out_stays_under_output_root(self) -> None:
         self.assertEqual(
             resolve_output_dir("custom", Path("example.json")),

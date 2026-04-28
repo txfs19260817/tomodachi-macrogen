@@ -8,6 +8,12 @@ Open `external/GLaMS/macros.html` in Chrome or Edge.
 - Left-side `recorded-inputs`: recording output, not for running macros.
 - `vsync-delay`: keep the default `-1` first.
 
+You can also bypass the web page and send over serial directly:
+
+```bash
+uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-controller
+```
+
 ## Pair Controller
 
 Run this in `commands` first:
@@ -27,16 +33,15 @@ Continue only after the Switch recognizes and responds to the controller.
 
 1. Open the face paint drawing screen.
 2. Select the thinnest square pixel brush.
-3. Move the brush cursor to the top-left first pixel.
+3. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
 4. Do not manually change the selected palette swatch, especially when running `color_*.txt`.
 
-The macro opens the palette, enters the HSB picker, resets Hue and the color pad, then sets the color.
+The macro opens the palette, enters the HSB picker, resets Hue and the color pad, then sets the color. Each `color_*.txt` starts with a hard canvas reset and does not actively return at the end.
 
 ## Run Files
 
 - Normal output: run `image_part1.txt`, `image_part2.txt`, and so on.
 - Color split output: run `color_01_*.txt`, `color_02_*.txt`, and so on.
-- Calibration output: run `calibration_part*.txt`.
 
 Do not skip or reorder files. Wait for one part to finish before pasting the next part.
 

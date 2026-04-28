@@ -14,6 +14,11 @@ class TestMacroWriter(unittest.TestCase):
         writer.tap("zr", 3, 2)
         self.assertEqual([line.text for line in writer.lines], ["{R2} 3", "{} 2"])
 
+    def test_stick_can_hold_buttons_at_the_same_time(self) -> None:
+        writer = MacroWriter()
+        writer.stick(0, 255, 128, 128, 9, buttons="ZL")
+        self.assertEqual([line.text for line in writer.lines], ["{L2} (0 255 128 128) 9"])
+
     def test_dpad_does_not_track_canvas_position(self) -> None:
         writer = MacroWriter()
         writer.dpad("R", 3)
@@ -61,6 +66,39 @@ class TestMacroWriter(unittest.TestCase):
                 "{} 1",
                 "{} 5",
                 "{R} 1",
+                "{} 1",
+            ],
+        )
+
+    def test_reset_canvas_to_origin_uses_fixed_physical_anchor(self) -> None:
+        writer = MacroWriter(
+            {
+                "canvas_reset_right_steps": 2,
+                "canvas_reset_down_steps": 1,
+                "timing": {
+                    "canvas_reset_hold_frames": 3,
+                    "canvas_reset_settle_frames": 2,
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                },
+            }
+        )
+        writer.current_x = 12
+        writer.current_y = 34
+
+        writer.reset_canvas_to_origin()
+
+        self.assertEqual(writer.canvas_position(), (0, 0))
+        self.assertEqual(
+            [line.text for line in writer.lines],
+            [
+                "{} (0 0 128 128) 3",
+                "{} (128 128 128 128) 2",
+                "{R} 1",
+                "{} 1",
+                "{R} 1",
+                "{} 1",
+                "{D} 1",
                 "{} 1",
             ],
         )

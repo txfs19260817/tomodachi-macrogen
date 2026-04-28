@@ -6,10 +6,13 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
   "Pillow>=10.0",
+  "pyserial>=3.5",
+  "tqdm>=4.67",
 ]
 
 [project.scripts]
 tomodachi-macrogen = "tomodachi_macrogen:main"
+swicc-runner = "swicc_runner:main"
 
 [dependency-groups]
 dev = [
@@ -22,7 +25,7 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["tomodachi_macrogen"]
+py-modules = ["tomodachi_macrogen", "swicc_runner"]
 packages = ["src"]
 
 [tool.ruff]

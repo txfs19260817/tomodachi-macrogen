@@ -7,6 +7,7 @@ from unittest.mock import patch
 from PIL import Image
 
 from src.living_grid import load_living_grid_json
+from src.path_planner import plan_color_pixels
 from tomodachi_macrogen import build_living_grid_colors, generate_color_split_macros, main
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "example.json"
@@ -40,16 +41,29 @@ class TestSplitByColor(unittest.TestCase):
                 _read_pixels(out_dir / "preview_quantized.png"),
             )
 
-    def test_each_color_macro_returns_to_top_left(self) -> None:
+    def test_each_color_macro_starts_with_hard_reset_but_does_not_return_at_end(self) -> None:
         grid = load_living_grid_json(FIXTURE)
         colors = build_living_grid_colors(grid, "original-palette")
-        config = {"palette_slots": 9}
+        config = {
+            "palette_slots": 9,
+            "canvas_reset_right_steps": 2,
+            "canvas_reset_down_steps": 1,
+            "timing": {
+                "canvas_reset_hold_frames": 3,
+                "canvas_reset_settle_frames": 2,
+                "movement_hold_frames": 1,
+                "movement_release_frames": 1,
+            },
+        }
 
         writers = generate_color_split_macros(config, grid, colors)
 
         self.assertTrue(writers)
-        for _color, writer in writers:
-            self.assertEqual(writer.canvas_position(), (0, 0))
+        for color, writer in writers:
+            lines = [line.text for line in writer.lines]
+            self.assertIn("{} (0 0 128 128) 3", lines)
+            expected_path = plan_color_pixels(grid.indices, color.color_index, start=(0, 0))
+            self.assertEqual(writer.canvas_position(), expected_path[-1])
 
 
 def _read_pixels(path: Path) -> bytes:

@@ -4,7 +4,7 @@ Convert [Living the Grid](https://living-the-grid.com/) JSON exports into GLaMS/
 
 This project no longer accepts image input. Living the Grid handles quantization, palette matching, and H/S/B press counts; this tool only generates runnable macros.
 
-Chinese README: [README.md](README.md).
+中文文档见 [README.md](README.md)。
 
 ## Workflow
 
@@ -48,12 +48,26 @@ uv run python tomodachi_macrogen.py input.json --split-lines 0
 # Split into one file per color
 uv run python tomodachi_macrogen.py input.json --split-by-color
 
-# Export preview only
-uv run python tomodachi_macrogen.py input.json --preview-only
-
 # Clean generated outputs and caches
 uv run python tomodachi_macrogen.py --clean-output --clean-cache
 ```
+
+## Python Serial Sender
+
+You can bypass the GLaMS web page and send generated `.txt` files directly:
+
+```bash
+# List serial ports
+uv run python swicc_runner.py --list-ports
+
+# Check file order and encoded preview without touching serial
+uv run python swicc_runner.py out/nkidhr/color_*.txt --dry-run
+
+# Pair the controller, then send files in filename order
+uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-controller
+```
+
+This runner reproduces GLaMS `+Q` encoding and `+GQF` queue polling, but omits the browser controller display and recording UI.
 
 ## CLI
 
@@ -64,12 +78,19 @@ uv run python tomodachi_macrogen.py --clean-output --clean-cache
 - `--color-order frequency|original-palette|luminance|hue`: color order, default `original-palette`, matching Living the Grid UI order.
 - `--split-lines N`: max lines per part; `0` disables splitting.
 - `--split-by-color`: one file per color, useful for rerunning a single color.
-- `--calibrate-only`: generate calibration macros only.
-- `--preview-only`: generate `preview_quantized.png` only.
 - `--clean-output`: delete generated outputs under `out/`.
 - `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
 
 The drawing path is fixed to same-color horizontal run planning. Path mode flags were removed.
+
+## swicc_runner.py CLI
+
+- `files`: generated `.txt` files or globs, for example `out/nkidhr/color_*.txt`.
+- `--list-ports`: list available serial ports.
+- `--port COM5`: select the Board B USB-UART serial port.
+- `--match-controller`: send the controller pairing macro.
+- `--dry-run`: parse and preview without serial access.
+- `--vsync-delay N`: default `-1`, meaning VSYNC delay is disabled.
 
 ## Outputs
 
@@ -133,10 +154,10 @@ Enable Pro Controller Wired Communication in Switch system settings.
 
 1. Open the face paint drawing screen.
 2. Select the thinnest square pixel brush.
-3. Move the brush cursor to the top-left first pixel.
+3. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
 4. Do not manually change the selected palette swatch before running, especially with `--split-by-color`.
 
-The generated macro opens the palette, enters the full HSB picker, resets Hue and the color pad, then uses JSON `press.h/s/b` values.
+The generated macro opens the palette, enters the full HSB picker, resets Hue and the color pad, then uses JSON `press.h/s/b` values. Each `color_*.txt` starts with a hard canvas reset: hold the stick upper-left for 7 seconds, then move right 192 and down 77.
 
 ## Config
 
@@ -146,5 +167,6 @@ Common tuning fields:
 
 - `timing.*`: button, movement, and menu waits.
 - `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
-- `canvas_origin_x` / `canvas_origin_y`: canvas origin offset.
+- `canvas_reset_right_steps` / `canvas_reset_down_steps`: recovery steps after the `color_*.txt` hard reset.
+- `timing.canvas_reset_*`: stick hold and settle timing for the `color_*.txt` hard reset.
 - `split_lines`: default part size.

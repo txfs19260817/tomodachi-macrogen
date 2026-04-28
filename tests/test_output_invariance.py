@@ -24,7 +24,6 @@ class TestOutputInvariance(unittest.TestCase):
                         str(FIXTURE),
                         "--out",
                         str(out_dir),
-                        "--preview-only",
                         "--color-order",
                         color_order,
                     ]
