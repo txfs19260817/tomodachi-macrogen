@@ -41,6 +41,15 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 
 ## 硬件
 
+固件：
+
+- SwiCC_RP2040：<https://github.com/knflrpn/SwiCC_RP2040/releases>
+- UART bridge：<https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2>
+
+烧录 UF2：按住 `BOOTSEL` 插 USB，出现 `RPI-RP2` U 盘后复制对应 `.uf2`。
+
+Switch 系统设置里需要打开 Pro Controller Wired Communication。
+
 - A 板插 Switch / Dock，烧录 SwiCC_RP2040 主固件。
 - B 板插电脑，烧录 `SwiCC_UART_Bridge.uf2`。
 - A GPIO0/TX 接 B GPIO1/RX。
@@ -51,4 +60,8 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 
 ![Waveshare RP2040-Zero pinout](https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg)
 
-SwiCC_RP2040：<https://github.com/knflrpn/SwiCC_RP2040>
+## 参考链接
+
+- Living the Grid：<https://living-the-grid.com/>
+- SwiCC_RP2040：<https://github.com/knflrpn/SwiCC_RP2040>
+- Waveshare RP2040-Zero pinout：<https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg>

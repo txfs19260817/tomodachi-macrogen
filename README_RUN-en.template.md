@@ -41,6 +41,15 @@ Do not skip or reorder files. When using a glob, the runner sends files in natur
 
 ## Hardware
 
+Firmware:
+
+- SwiCC_RP2040: <https://github.com/knflrpn/SwiCC_RP2040/releases>
+- UART bridge: <https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2>
+
+To flash UF2, hold `BOOTSEL` while plugging USB, then copy the matching `.uf2` to the `RPI-RP2` drive.
+
+Enable Pro Controller Wired Communication in Switch system settings.
+
 - Board A plugs into Switch / Dock and runs the SwiCC_RP2040 main firmware.
 - Board B plugs into the computer and runs `SwiCC_UART_Bridge.uf2`.
 - Board A GPIO0/TX connects to Board B GPIO1/RX.
@@ -51,4 +60,8 @@ Do not skip or reorder files. When using a glob, the runner sends files in natur
 
 ![Waveshare RP2040-Zero pinout](https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg)
 
-SwiCC_RP2040: <https://github.com/knflrpn/SwiCC_RP2040>
+## References
+
+- Living the Grid: <https://living-the-grid.com/>
+- SwiCC_RP2040: <https://github.com/knflrpn/SwiCC_RP2040>
+- Waveshare RP2040-Zero pinout: <https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg>
