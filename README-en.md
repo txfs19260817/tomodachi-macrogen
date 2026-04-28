@@ -51,9 +51,6 @@ uv run python tomodachi_macrogen.py input.json --split-by-color
 # Export preview only
 uv run python tomodachi_macrogen.py input.json --preview-only
 
-# Use slower hardware timings
-uv run python tomodachi_macrogen.py input.json --config config.slow.json
-
 # Clean generated outputs and caches
 uv run python tomodachi_macrogen.py --clean-output --clean-cache
 ```
@@ -143,11 +140,7 @@ The generated macro opens the palette, enters the full HSB picker, resets Hue an
 
 ## Config
 
-Defaults live in `config.default.json`. If hardware misses inputs or runs too fast, try:
-
-```bash
-uv run python tomodachi_macrogen.py input.json --config config.slow.json
-```
+Defaults live in `config.default.json`. Current defaults are intentionally conservative to avoid missed inputs on hardware.
 
 Common tuning fields:
 

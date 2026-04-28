@@ -51,9 +51,6 @@ uv run python tomodachi_macrogen.py input.json --split-by-color
 # 只导出预览图，快速检查 JSON
 uv run python tomodachi_macrogen.py input.json --preview-only
 
-# 使用慢速实机配置
-uv run python tomodachi_macrogen.py input.json --config config.slow.json
-
 # 清理输出和缓存
 uv run python tomodachi_macrogen.py --clean-output --clean-cache
 ```
@@ -143,11 +140,7 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 
 ## 配置
 
-默认配置在 `config.default.json`。实机漏步或过快时先试：
-
-```bash
-uv run python tomodachi_macrogen.py input.json --config config.slow.json
-```
+默认配置在 `config.default.json`，当前默认值偏慢，优先保证实机不漏步。
 
 常调字段：
 
