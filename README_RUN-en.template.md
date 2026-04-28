@@ -1,14 +1,8 @@
-# Running Generated GLaMS/SwiCC Scripts
+# Running Generated SwiCC Scripts
 
 ## Entry Point
 
-Open `external/GLaMS/macros.html` in Chrome or Edge.
-
-- Right-side `commands`: paste generated `.txt` content and click `Run`.
-- Left-side `recorded-inputs`: recording output, not for running macros.
-- `vsync-delay`: keep the default `-1` first.
-
-You can also bypass the web page and send over serial directly:
+Use `swicc_runner.py` to send generated `.txt` files over serial:
 
 ```bash
 uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-controller
@@ -16,7 +10,7 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 
 ## Pair Controller
 
-Run this in `commands` first:
+`--match-controller` sends this pairing input first:
 
 ```text
 {A} 10
@@ -27,7 +21,7 @@ Run this in `commands` first:
 {} 10
 ```
 
-Continue only after the Switch recognizes and responds to the controller.
+Continue sending drawing files only after the Switch recognizes and responds to the controller.
 
 ## In-Game Setup
 
@@ -43,7 +37,7 @@ The macro opens the palette, enters the HSB picker, resets Hue and the color pad
 - Normal output: run `image_part1.txt`, `image_part2.txt`, and so on.
 - Color split output: run `color_01_*.txt`, `color_02_*.txt`, and so on.
 
-Do not skip or reorder files. Wait for one part to finish before pasting the next part.
+Do not skip or reorder files. When using a glob, the runner sends files in natural filename order.
 
 ## Hardware
 
@@ -56,7 +50,5 @@ Do not skip or reorder files. Wait for one part to finish before pasting the nex
 - For Waveshare RP2040-Zero, wire by GPIO labels.
 
 ![Waveshare RP2040-Zero pinout](https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg)
-
-GLaMS: <https://github.com/knflrpn/GLaMS>
 
 SwiCC_RP2040: <https://github.com/knflrpn/SwiCC_RP2040>

@@ -1,14 +1,8 @@
-# 运行生成的 GLaMS/SwiCC 脚本
+# 运行生成的 SwiCC 脚本
 
 ## 入口
 
-用 Chrome 或 Edge 打开 `external/GLaMS/macros.html`。
-
-- 右侧 `commands`：粘贴本工具生成的 `.txt`，点击 `Run`。
-- 左侧 `recorded-inputs`：录制输出，不用于运行宏。
-- `vsync-delay`：先保持默认 `-1`。
-
-也可以不用网页，直接走串口：
+用 `swicc_runner.py` 通过串口发送本工具生成的 `.txt`：
 
 ```bash
 uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-controller
@@ -16,7 +10,7 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 
 ## 配对手柄
 
-先在 `commands` 运行：
+`--match-controller` 会先发送这段配对输入：
 
 ```text
 {A} 10
@@ -27,7 +21,7 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 {} 10
 ```
 
-如果 Switch 能识别并响应，再继续。
+如果 Switch 能识别并响应，再继续发送绘图文件。
 
 ## 游戏内准备
 
@@ -43,7 +37,7 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 - 普通输出：按顺序运行 `image_part1.txt`、`image_part2.txt`。
 - 按颜色输出：按顺序运行 `color_01_*.txt`、`color_02_*.txt`。
 
-不要跳过或打乱顺序。一个 part 跑完后，再粘贴下一个 part。
+不要跳过或打乱顺序。使用 glob 时，runner 会按文件名自然排序发送。
 
 ## 硬件
 
@@ -56,7 +50,5 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 - Waveshare RP2040-Zero 按 GPIO 标号接线。
 
 ![Waveshare RP2040-Zero pinout](https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg)
-
-GLaMS：<https://github.com/knflrpn/GLaMS>
 
 SwiCC_RP2040：<https://github.com/knflrpn/SwiCC_RP2040>

@@ -1,6 +1,6 @@
 # tomodachi-macrogen
 
-Convert [Living the Grid](https://living-the-grid.com/) JSON exports into GLaMS/SwiCC `.txt` macros for Tomodachi Life face paint automation.
+Convert [Living the Grid](https://living-the-grid.com/) JSON exports into SwiCC `.txt` macros for Tomodachi Life face paint automation.
 
 This project no longer accepts image input. Living the Grid handles quantization, palette matching, and H/S/B press counts; this tool only generates runnable macros.
 
@@ -12,8 +12,8 @@ This project no longer accepts image input. Living the Grid handles quantization
 2. Select `square`, `smooth`, `1px`, and the `game` palette.
 3. Set `max colours`, for example `12`.
 4. Export `JSON (per-pixel data)`.
-5. Generate GLaMS macros with this tool.
-6. Run the generated `.txt` files in GLaMS in order.
+5. Generate SwiCC macros with this tool.
+6. Send the generated `.txt` files in order with `swicc_runner.py`.
 
 ```bash
 uv run python tomodachi_macrogen.py input.json
@@ -54,7 +54,7 @@ uv run python tomodachi_macrogen.py --clean-output --clean-cache
 
 ## Python Serial Sender
 
-You can bypass the GLaMS web page and send generated `.txt` files directly:
+Use `swicc_runner.py` to send generated `.txt` files through the Board B USB-UART port:
 
 ```bash
 # List serial ports
@@ -67,7 +67,7 @@ uv run python swicc_runner.py out/nkidhr/color_*.txt --dry-run
 uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-controller
 ```
 
-This runner reproduces GLaMS `+Q` encoding and `+GQF` queue polling, but omits the browser controller display and recording UI.
+This runner sends macros using SwiCC `+Q` encoding and `+GQF` queue polling.
 
 ## CLI
 
@@ -102,32 +102,6 @@ The drawing path is fixed to same-color horizontal run planning. Path mode flags
 - `manifest.json`: generation summary.
 - `config_used.json`: merged runtime config.
 - `README_RUN.md` / `README_RUN-en.md`: run instructions.
-
-## GLaMS
-
-GLaMS: <https://github.com/knflrpn/GLaMS>
-
-This repository keeps GLaMS at `external/GLaMS`:
-
-```bash
-git submodule update --init --recursive
-git submodule update --remote external/GLaMS
-```
-
-Use the standard page `external/GLaMS/macros.html`. Paste generated `.txt` content into the large right-side `commands` textarea. The left-side `recorded-inputs` textarea is for recording output, not for running macros.
-
-To pair the controller, run this first in `commands`:
-
-```text
-{A} 10
-{} 60
-{L1 R1} 10
-{} 30
-{A} 10
-{} 10
-```
-
-Run multiple parts one by one in filename order.
 
 ## Hardware
 

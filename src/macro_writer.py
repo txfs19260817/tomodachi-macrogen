@@ -1,8 +1,13 @@
 from collections.abc import Iterable
 from typing import Any
 
-from .glams_format import MacroLine, format_controller_state, format_stick, normalize_button
 from .splitter import split_macro_lines
+from .swicc_format import (
+    MacroLine,
+    format_controller_state,
+    format_stick,
+    normalize_button,
+)
 
 
 class MacroWriter:

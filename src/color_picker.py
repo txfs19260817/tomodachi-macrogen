@@ -5,7 +5,7 @@ from .macro_writer import MacroWriter
 
 
 class ColorPicker:
-    """Emit Tomodachi Life picker navigation through GLaMS/SwiCC inputs.
+    """Emit Tomodachi Life picker navigation through SwiCC macro inputs.
 
     The algorithm follows the user-provided spec and is aligned with
     TomodachiDraw's CanvasNavigatorService.cs:

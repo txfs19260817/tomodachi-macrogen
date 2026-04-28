@@ -1,6 +1,6 @@
 # tomodachi-macrogen
 
-把 [Living the Grid](https://living-the-grid.com/) 导出的 JSON 转成 GLaMS/SwiCC `.txt` 宏，用于 Tomodachi Life 面部彩绘自动绘制。
+把 [Living the Grid](https://living-the-grid.com/) 导出的 JSON 转成 SwiCC `.txt` 宏，用于 Tomodachi Life 面部彩绘自动绘制。
 
 本项目不再处理图片输入。图片量化、调色板和 H/S/B 按键次数交给 Living the Grid；这里只负责生成可运行宏。
 
@@ -12,8 +12,8 @@ English documentation: [README-en.md](README-en.md).
 2. 选择 `square`、`smooth`、`1px`、`game` palette。
 3. 设置 `max colours`，例如 `12`。
 4. 导出 `JSON (per-pixel data)`。
-5. 运行本工具生成 GLaMS 宏。
-6. 在 GLaMS 里按顺序运行生成的 `.txt`。
+5. 运行本工具生成 SwiCC 宏。
+6. 用 `swicc_runner.py` 按顺序发送生成的 `.txt`。
 
 ```bash
 uv run python tomodachi_macrogen.py input.json
@@ -54,7 +54,7 @@ uv run python tomodachi_macrogen.py --clean-output --clean-cache
 
 ## Python 串口发送
 
-可以不用 GLaMS 网页，直接用 Python 发送生成的 `.txt`：
+用 `swicc_runner.py` 通过 B 板 USB-UART 发送生成的 `.txt`：
 
 ```bash
 # 查看串口
@@ -67,7 +67,7 @@ uv run python swicc_runner.py out/nkidhr/color_*.txt --dry-run
 uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-controller
 ```
 
-这个 runner 复刻 GLaMS 的 `+Q` 编码和 `+GQF` 队列轮询，但不包含网页的手柄显示和录制功能。
+这个 runner 使用 SwiCC `+Q` 编码和 `+GQF` 队列轮询发送宏。
 
 ## CLI
 
@@ -102,32 +102,6 @@ uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-control
 - `manifest.json`：生成摘要。
 - `config_used.json`：实际使用配置。
 - `README_RUN.md` / `README_RUN-en.md`：运行说明。
-
-## GLaMS
-
-GLaMS：<https://github.com/knflrpn/GLaMS>
-
-本仓库把 GLaMS 放在 `external/GLaMS`：
-
-```bash
-git submodule update --init --recursive
-git submodule update --remote external/GLaMS
-```
-
-使用标准页面 `external/GLaMS/macros.html`。右侧大输入框 `commands` 用来粘贴并运行本工具生成的 `.txt`；左侧 `recorded-inputs` 是录制输出，不是运行入口。
-
-配对手柄时可先在 `commands` 运行：
-
-```text
-{A} 10
-{} 60
-{L1 R1} 10
-{} 30
-{A} 10
-{} 10
-```
-
-多个 part 要按文件名顺序逐个运行。
 
 ## 硬件
 

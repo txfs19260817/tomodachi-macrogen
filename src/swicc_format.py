@@ -44,7 +44,7 @@ def normalize_button(button: str) -> str:
     normalized = button.strip().upper()
     normalized = BUTTON_ALIASES.get(normalized, normalized)
     if normalized not in VALID_BUTTONS:
-        raise ValueError(f"Unsupported GLaMS/SwiCC button: {button!r}")
+        raise ValueError(f"Unsupported SwiCC macro button: {button!r}")
     return normalized
 
 

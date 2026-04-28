@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from .glams_format import MacroLine
+from .swicc_format import MacroLine
 
 
 def split_macro_lines(

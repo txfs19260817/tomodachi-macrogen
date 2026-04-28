@@ -123,7 +123,7 @@ def main() -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Generate GLaMS/SwiCC macro scripts from Living the Grid JSON."
+        description="Generate SwiCC macro scripts from Living the Grid JSON."
     )
     parser.add_argument("input", nargs="?", help="Living the Grid JSON file")
     parser.add_argument("--config", help="Path to config JSON")
@@ -149,8 +149,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--split-by-color",
         action="store_true",
         help=(
-            "Write one macro txt per color; each file sets slot 0, draws that color, "
-            "then returns to top-left"
+            "Write one macro txt per color; each file sets slot 0 and starts from a "
+            "hard canvas reset"
         ),
     )
     parser.add_argument(

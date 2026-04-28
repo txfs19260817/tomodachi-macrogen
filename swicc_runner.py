@@ -99,7 +99,7 @@ def main() -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Send GLaMS/SwiCC macro txt files directly over a serial port."
+        description="Send SwiCC macro txt files directly over a serial port."
     )
     parser.add_argument("files", nargs="*", help="Macro txt files or glob patterns")
     parser.add_argument("--port", help="Serial port, for example COM5 or /dev/ttyACM0")
