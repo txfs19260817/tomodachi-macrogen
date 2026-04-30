@@ -103,6 +103,16 @@ class MacroWriter:
             self.current_y - int(self.config.get("canvas_origin_y", 0)),
         )
 
+    def draw_pixels(self, points: Iterable[tuple[int, int]]) -> None:
+        current_run: list[tuple[int, int]] = []
+        for point in points:
+            if current_run and self._continues_horizontal_run(current_run[-1], point):
+                current_run.append(point)
+                continue
+            self._draw_run(current_run)
+            current_run = [point]
+        self._draw_run(current_run)
+
     def draw_pixel(self) -> None:
         self.draw_events.append(self.canvas_position())
         hold = int(self.timing.get("draw_hold_frames", self.timing.get("tap_hold_frames", 2)))
@@ -134,3 +144,57 @@ class MacroWriter:
 
     def _neutral_stick(self) -> int:
         return int(self.config.get("stick", {}).get("neutral", 128))
+
+    def _draw_run(self, points: list[tuple[int, int]]) -> None:
+        if not points:
+            return
+        self.move_cursor_to(*points[0])
+        if len(points) == 1:
+            self.draw_pixel()
+            return
+
+        hold = int(self.timing.get("draw_hold_frames", self.timing.get("tap_hold_frames", 2)))
+        release = int(
+            self.timing.get("draw_release_frames", self.timing.get("tap_release_frames", 1))
+        )
+        self.draw_events.append(self.canvas_position())
+        self.hold("A", hold)
+        previous = points[0]
+        for point in points[1:]:
+            direction = self._horizontal_step_direction(previous, point)
+            self._drag_canvas_direction(direction)
+            previous = point
+        self.release(release)
+
+    def _drag_canvas_direction(self, direction: str) -> None:
+        normalized = normalize_button(direction)
+        if normalized not in {"L", "R"}:
+            raise ValueError("drag direction must be L or R")
+
+        hold = int(self.timing.get("movement_hold_frames", 1))
+        release = int(self.timing.get("movement_release_frames", 1))
+        chunk_size = int(self.timing.get("movement_chunk_size", 0))
+        chunk_settle = int(self.timing.get("movement_chunk_settle_frames", 0))
+
+        self.hold(["A", normalized], hold)
+        self.hold("A", release)
+        if normalized == "R":
+            self.current_x += 1
+        else:
+            self.current_x -= 1
+        self.draw_events.append(self.canvas_position())
+        if chunk_size > 0 and chunk_settle > 0 and len(self.draw_events) % chunk_size == 0:
+            self.hold("A", chunk_settle)
+
+    @staticmethod
+    def _continues_horizontal_run(
+        previous: tuple[int, int],
+        current: tuple[int, int],
+    ) -> bool:
+        return previous[1] == current[1] and abs(previous[0] - current[0]) == 1
+
+    @staticmethod
+    def _horizontal_step_direction(previous: tuple[int, int], current: tuple[int, int]) -> str:
+        if previous[1] != current[1] or abs(previous[0] - current[0]) != 1:
+            raise ValueError("drag draw only supports adjacent horizontal pixels")
+        return "R" if current[0] > previous[0] else "L"

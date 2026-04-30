@@ -70,6 +70,95 @@ class TestMacroWriter(unittest.TestCase):
             ],
         )
 
+    def test_draw_pixels_drags_adjacent_horizontal_run(self) -> None:
+        writer = MacroWriter(
+            {
+                "timing": {
+                    "draw_hold_frames": 3,
+                    "draw_release_frames": 2,
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                }
+            }
+        )
+
+        writer.draw_pixels([(0, 0), (1, 0), (2, 0)])
+
+        self.assertEqual(writer.draw_events, [(0, 0), (1, 0), (2, 0)])
+        self.assertEqual(writer.canvas_position(), (2, 0))
+        self.assertEqual(
+            [line.text for line in writer.lines],
+            [
+                "{A} 3",
+                "{A R} 1",
+                "{A} 1",
+                "{A R} 1",
+                "{A} 1",
+                "{} 2",
+            ],
+        )
+
+    def test_draw_pixels_splits_non_adjacent_runs(self) -> None:
+        writer = MacroWriter(
+            {
+                "timing": {
+                    "draw_hold_frames": 3,
+                    "draw_release_frames": 2,
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                }
+            }
+        )
+
+        writer.draw_pixels([(0, 0), (1, 0), (3, 0)])
+
+        self.assertEqual(writer.draw_events, [(0, 0), (1, 0), (3, 0)])
+        self.assertEqual(writer.canvas_position(), (3, 0))
+        self.assertEqual(
+            [line.text for line in writer.lines],
+            [
+                "{A} 3",
+                "{A R} 1",
+                "{A} 1",
+                "{} 2",
+                "{R} 1",
+                "{} 1",
+                "{R} 1",
+                "{} 1",
+                "{A} 3",
+                "{} 2",
+            ],
+        )
+
+    def test_draw_pixels_drags_reverse_horizontal_run(self) -> None:
+        writer = MacroWriter(
+            {
+                "timing": {
+                    "draw_hold_frames": 3,
+                    "draw_release_frames": 2,
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                }
+            }
+        )
+        writer.current_x = 2
+
+        writer.draw_pixels([(2, 0), (1, 0), (0, 0)])
+
+        self.assertEqual(writer.draw_events, [(2, 0), (1, 0), (0, 0)])
+        self.assertEqual(writer.canvas_position(), (0, 0))
+        self.assertEqual(
+            [line.text for line in writer.lines],
+            [
+                "{A} 3",
+                "{A L} 1",
+                "{A} 1",
+                "{A L} 1",
+                "{A} 1",
+                "{} 2",
+            ],
+        )
+
     def test_reset_canvas_to_origin_uses_fixed_physical_anchor(self) -> None:
         writer = MacroWriter(
             {

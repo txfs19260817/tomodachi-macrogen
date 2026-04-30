@@ -267,9 +267,7 @@ def generate_living_grid_macro(
                 batch_color.color.color_index,
                 start=writer.canvas_position(),
             )
-            for x, y in pixels:
-                writer.move_cursor_to(x, y)
-                writer.draw_pixel()
+            writer.draw_pixels(pixels)
 
     return writer
 
@@ -288,13 +286,12 @@ def generate_color_split_macros(
 
         picker.set_current_palette_slot_press(palette_entry.press)
         writer.reset_canvas_to_origin()
-        for x, y in plan_color_pixels(
+        pixels = plan_color_pixels(
             grid.indices,
             color.color_index,
             start=writer.canvas_position(),
-        ):
-            writer.move_cursor_to(x, y)
-            writer.draw_pixel()
+        )
+        writer.draw_pixels(pixels)
 
         writers.append((color, writer))
 
