@@ -14,6 +14,9 @@ class MacroWriter:
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
         self.timing = self.config.get("timing", {})
+        self.canvas_cell_step = int(self.config.get("canvas_cell_step", 1))
+        if self.canvas_cell_step < 1:
+            raise ValueError("canvas_cell_step must be greater than zero")
         self.lines: list[MacroLine] = []
         self.current_x = int(self.config.get("canvas_origin_x", 0))
         self.current_y = int(self.config.get("canvas_origin_y", 0))
@@ -71,13 +74,13 @@ class MacroWriter:
         dx = target_x - self.current_x
         dy = target_y - self.current_y
         if dx > 0:
-            self._move_canvas_direction("R", dx)
+            self._move_canvas_direction("R", dx * self.canvas_cell_step)
         elif dx < 0:
-            self._move_canvas_direction("L", -dx)
+            self._move_canvas_direction("L", -dx * self.canvas_cell_step)
         if dy > 0:
-            self._move_canvas_direction("D", dy)
+            self._move_canvas_direction("D", dy * self.canvas_cell_step)
         elif dy < 0:
-            self._move_canvas_direction("U", -dy)
+            self._move_canvas_direction("U", -dy * self.canvas_cell_step)
 
         self.current_x = target_x
         self.current_y = target_y
@@ -176,8 +179,9 @@ class MacroWriter:
         chunk_size = int(self.timing.get("movement_chunk_size", 0))
         chunk_settle = int(self.timing.get("movement_chunk_settle_frames", 0))
 
-        self.hold(["A", normalized], hold)
-        self.hold("A", release)
+        for _ in range(self.canvas_cell_step):
+            self.hold(["A", normalized], hold)
+            self.hold("A", release)
         if normalized == "R":
             self.current_x += 1
         else:

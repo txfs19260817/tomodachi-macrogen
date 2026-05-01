@@ -3,7 +3,9 @@ import unittest
 from pathlib import Path
 
 from swicc_runner import (
+    MATCH_CONTROLLER_SETTLE_FRAMES,
     MacroCommand,
+    build_command_list,
     convert_button_string,
     encode_macro_command,
     expand_macro_paths,
@@ -41,6 +43,30 @@ class TestSwiccRunner(unittest.TestCase):
                 [path.name for path in paths],
                 ["color_01.txt", "color_02.txt", "color_10.txt"],
             )
+
+    def test_match_controller_waits_before_file_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            macro = Path(tmp) / "color_01.txt"
+            macro.write_text("{A} 1\n", encoding="utf-8")
+
+            commands = build_command_list([macro], match_controller=True)
+
+            self.assertEqual(
+                commands[-2],
+                MacroCommand(
+                    buttons="",
+                    frames=MATCH_CONTROLLER_SETTLE_FRAMES,
+                    source="controller-match-settle",
+                ),
+            )
+            self.assertEqual(commands[-1].buttons, "A")
+
+    def test_match_controller_only_does_not_add_settle_wait(self) -> None:
+        commands = build_command_list([], match_controller=True)
+
+        self.assertFalse(
+            any(command.source == "controller-match-settle" for command in commands)
+        )
 
 
 if __name__ == "__main__":

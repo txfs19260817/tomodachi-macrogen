@@ -51,8 +51,11 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     grid = load_living_grid_json(input_path)
+    config.setdefault("canvas_cell_step", grid.brush_px)
     colors = build_living_grid_colors(grid, str(config.get("color_order", "original-palette")))
     batches = make_batches(colors, int(config.get("palette_slots", 9)))
+    direct_palette = has_game_palette_coordinates(grid, colors)
+    palette_source = "game" if direct_palette else "auto"
 
     grid.preview.save(out_dir / "preview_quantized.png")
     if args.split_by_color:
@@ -74,6 +77,8 @@ def main() -> int:
                 "input_version": grid.version,
                 "brush": grid.brush,
                 "canvas": grid.canvas,
+                "canvas_cell_step": config.get("canvas_cell_step"),
+                "palette_source": palette_source,
                 "parts": part_files,
                 "preview": "preview_quantized.png",
                 "reconstructed": "reconstructed_from_macro.png",
@@ -87,12 +92,17 @@ def main() -> int:
         print(f"Wrote color-split Living the Grid macros to {out_dir}")
         return 0
 
-    writer = generate_living_grid_macro(config, grid, batches)
+    writer = (
+        generate_direct_palette_macro(config, grid, colors)
+        if direct_palette
+        else generate_living_grid_macro(config, grid, batches)
+    )
     parts = writer.split_output(config.get("split_lines"))
-    reconstructed = reconstruct_batched_image(grid, writer, flatten_batches(batches))
+    batch_colors = color_split_report(colors) if direct_palette else flatten_batches(batches)
+    reconstructed = reconstruct_batched_image(grid, writer, batch_colors)
     reconstructed.save(out_dir / "reconstructed_from_macro.png")
 
-    write_palette_report(out_dir / "palette_report.csv", flatten_batches(batches), grid)
+    write_palette_report(out_dir / "palette_report.csv", batch_colors, grid)
     part_files = write_parts(out_dir, "image_part", parts)
     write_common_outputs(
         out_dir,
@@ -107,12 +117,14 @@ def main() -> int:
             "input_version": grid.version,
             "brush": grid.brush,
             "canvas": grid.canvas,
+            "canvas_cell_step": config.get("canvas_cell_step"),
+            "palette_source": palette_source,
             "parts": part_files,
             "preview": "preview_quantized.png",
             "reconstructed": "reconstructed_from_macro.png",
             "palette_report": "palette_report.csv",
             "palette_color_count": len(colors),
-            "batch_count": len(batches),
+            "batch_count": 0 if direct_palette else len(batches),
             "total_lines": len(writer.lines),
             "total_frames": writer.total_frames(),
         },
@@ -272,6 +284,27 @@ def generate_living_grid_macro(
     return writer
 
 
+def generate_direct_palette_macro(
+    config: dict[str, Any],
+    grid: LivingGridData,
+    colors: list[PaletteColor],
+) -> MacroWriter:
+    writer = MacroWriter(config)
+    picker = ColorPicker(writer, config)
+
+    for color in colors:
+        palette_entry = grid.palette[color.color_index]
+        select_current_color(picker, config, palette_entry)
+        pixels = plan_color_pixels(
+            grid.indices,
+            color.color_index,
+            start=writer.canvas_position(),
+        )
+        writer.draw_pixels(pixels)
+
+    return writer
+
+
 def generate_color_split_macros(
     config: dict[str, Any],
     grid: LivingGridData,
@@ -284,7 +317,7 @@ def generate_color_split_macros(
         picker = ColorPicker(writer, config)
         palette_entry = grid.palette[color.color_index]
 
-        picker.set_current_palette_slot_press(palette_entry.press)
+        select_current_color(picker, config, palette_entry)
         writer.reset_canvas_to_origin()
         pixels = plan_color_pixels(
             grid.indices,
@@ -296,6 +329,23 @@ def generate_color_split_macros(
         writers.append((color, writer))
 
     return writers
+
+
+def has_game_palette_coordinates(
+    grid: LivingGridData,
+    colors: list[PaletteColor],
+) -> bool:
+    return bool(colors) and all(
+        grid.palette[color.color_index].game is not None for color in colors
+    )
+
+
+def select_current_color(picker: ColorPicker, config: dict[str, Any], palette_entry: Any) -> None:
+    del config
+    if palette_entry.game is not None:
+        picker.set_current_palette_slot_game(palette_entry.game)
+        return
+    picker.set_current_palette_slot_press(palette_entry.press)
 
 
 def color_split_report(colors: list[PaletteColor]) -> list[BatchColor]:

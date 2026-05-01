@@ -21,16 +21,16 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 {} 10
 ```
 
-Continue sending drawing files only after the Switch recognizes and responds to the controller.
+When drawing files are provided in the same command, the runner waits 4 seconds after pairing before sending them.
 
 ## In-Game Setup
 
 1. Open the face paint drawing screen.
-2. Select the thinnest square pixel brush.
+2. Select the same square smooth brush size used in the Living the Grid JSON.
 3. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
 4. Do not manually change the selected palette swatch, especially when running `color_*.txt`.
 
-The macro opens the palette, enters the HSB picker, resets Hue and the color pad, then sets the color. Each `color_*.txt` starts with a hard canvas reset and does not actively return at the end.
+If every used JSON color includes default 84-color Game Palette coordinates, the macro stays on the Game Palette and selects colors by coordinates. Otherwise it opens the HSB picker, resets Hue and the color pad, then sets each color. Each `color_*.txt` starts with a hard canvas reset and does not actively return at the end.
 
 ## Run Files
 

@@ -9,7 +9,7 @@ This project no longer accepts image input. Living the Grid handles quantization
 ## Workflow
 
 1. Upload an image to Living the Grid.
-2. Select `square`, `smooth`, `1px`, and the `game` palette.
+2. Select `square`, `smooth`, one of `1px / 3px / 7px / 13px / 19px / 27px`, and the `game` palette.
 3. Set `max colours`, for example `12`.
 4. Export `JSON (per-pixel data)`.
 5. Generate SwiCC macros with this tool.
@@ -63,7 +63,7 @@ uv run python swicc_runner.py --list-ports
 # Check file order and encoded preview without touching serial
 uv run python swicc_runner.py out/nkidhr/color_*.txt --dry-run
 
-# Pair the controller, then send files in filename order
+# Pair the controller, wait 4 seconds, then send files in filename order
 uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-controller
 ```
 
@@ -88,7 +88,7 @@ The drawing path is fixed to same-color horizontal run planning. Path mode flags
 - `files`: generated `.txt` files or globs, for example `out/nkidhr/color_*.txt`.
 - `--list-ports`: list available serial ports.
 - `--port COM5`: select the Board B USB-UART serial port.
-- `--match-controller`: send the controller pairing macro.
+- `--match-controller`: send the controller pairing macro; when files are also provided, wait 4 seconds before drawing.
 - `--dry-run`: parse and preview without serial access.
 - `--vsync-delay N`: default `-1`, meaning VSYNC delay is disabled.
 
@@ -127,11 +127,11 @@ Enable Pro Controller Wired Communication in Switch system settings.
 ## In-Game Setup
 
 1. Open the face paint drawing screen.
-2. Select the thinnest square pixel brush.
+2. Select the same square smooth brush size shown in the Living the Grid JSON.
 3. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
 4. Do not manually change the selected palette swatch before running, especially with `--split-by-color`.
 
-The generated macro opens the palette, enters the full HSB picker, resets Hue and the color pad, then uses JSON `press.h/s/b` values. Each `color_*.txt` starts with a hard canvas reset: hold the stick upper-left for 7 seconds, then move right 192 and down 77.
+The generated macro treats one Living the Grid cell as one brush stamp; movement is scaled by `brush.px`. If every used palette entry includes `game: {row, col}`, `game: {extra}`, or a label like `R1·C1`, the macro stays on the default 84-color Game Palette. Otherwise it opens the H/S/B picker and uses JSON `press.h/s/b` values. Each `color_*.txt` starts with a hard canvas reset: hold the stick upper-left for 7 seconds, then move right 192 and down 77.
 
 ## Config
 
@@ -140,6 +140,7 @@ Defaults live in `config.default.json`. Current defaults are intentionally conse
 Common tuning fields:
 
 - `timing.*`: button, movement, and menu waits.
+- `game_palette_*`: dimensions and anchor timing for default Game Palette navigation.
 - `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`: recovery steps after the `color_*.txt` hard reset.
 - `timing.canvas_reset_*`: stick hold and settle timing for the `color_*.txt` hard reset.

@@ -13,6 +13,7 @@ CONTROLLER_MATCH_MACRO = """{A} 10
 {} 30
 {A} 10
 {} 10"""
+MATCH_CONTROLLER_SETTLE_FRAMES = 4 * 60
 
 MACRO_LINE_RE = re.compile(
     r"(?:{(?P<buttons>.*?)}\s*)?"
@@ -62,13 +63,10 @@ def main() -> int:
     if not args.files and not args.match_controller:
         parser.error("provide at least one macro file or use --match-controller")
 
-    commands = []
-    if args.match_controller:
-        commands.extend(parse_macro_text(CONTROLLER_MATCH_MACRO, source="controller-match"))
     file_paths = expand_macro_paths(args.files)
     if args.files and not file_paths:
         parser.error("no macro files matched the provided file arguments")
-    commands.extend(read_macro_files(file_paths))
+    commands = build_command_list(file_paths, match_controller=args.match_controller)
 
     stats = RunnerStats(
         file_count=len(file_paths),
@@ -169,6 +167,26 @@ def read_macro_files(paths: list[Path]) -> list[MacroCommand]:
     commands: list[MacroCommand] = []
     for path in paths:
         commands.extend(parse_macro_text(path.read_text(encoding="utf-8"), source=str(path)))
+    return commands
+
+
+def build_command_list(
+    paths: list[Path],
+    *,
+    match_controller: bool,
+) -> list[MacroCommand]:
+    commands: list[MacroCommand] = []
+    if match_controller:
+        commands.extend(parse_macro_text(CONTROLLER_MATCH_MACRO, source="controller-match"))
+        if paths:
+            commands.append(
+                MacroCommand(
+                    buttons="",
+                    frames=MATCH_CONTROLLER_SETTLE_FRAMES,
+                    source="controller-match-settle",
+                )
+            )
+    commands.extend(read_macro_files(paths))
     return commands
 
 

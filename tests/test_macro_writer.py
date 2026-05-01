@@ -40,6 +40,23 @@ class TestMacroWriter(unittest.TestCase):
             ["{R} 1", "{} 1", "{R} 1", "{} 1", "{D} 1", "{} 1"],
         )
 
+    def test_canvas_cell_step_scales_physical_movement_only(self) -> None:
+        writer = MacroWriter(
+            {
+                "canvas_cell_step": 3,
+                "timing": {
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                },
+            }
+        )
+
+        writer.move_cursor_to(2, 1)
+
+        self.assertEqual(writer.canvas_position(), (2, 1))
+        self.assertEqual([line.text for line in writer.lines].count("{R} 1"), 6)
+        self.assertEqual([line.text for line in writer.lines].count("{D} 1"), 3)
+
     def test_move_cursor_can_pause_between_movement_chunks(self) -> None:
         writer = MacroWriter(
             {
@@ -158,6 +175,25 @@ class TestMacroWriter(unittest.TestCase):
                 "{} 2",
             ],
         )
+
+    def test_drag_uses_canvas_cell_step_but_records_logical_cells(self) -> None:
+        writer = MacroWriter(
+            {
+                "canvas_cell_step": 3,
+                "timing": {
+                    "draw_hold_frames": 3,
+                    "draw_release_frames": 2,
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                },
+            }
+        )
+
+        writer.draw_pixels([(0, 0), (1, 0)])
+
+        self.assertEqual(writer.draw_events, [(0, 0), (1, 0)])
+        self.assertEqual(writer.canvas_position(), (1, 0))
+        self.assertEqual([line.text for line in writer.lines].count("{A R} 1"), 3)
 
     def test_reset_canvas_to_origin_uses_fixed_physical_anchor(self) -> None:
         writer = MacroWriter(

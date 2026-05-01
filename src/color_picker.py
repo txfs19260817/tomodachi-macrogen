@@ -1,6 +1,6 @@
 from typing import Any
 
-from .living_grid import PressCounts
+from .living_grid import GamePaletteTarget, PressCounts
 from .macro_writer import MacroWriter
 
 
@@ -54,6 +54,18 @@ class ColorPicker:
         self.writer.wait(int(self.timing.get("menu_close_frames", 8)))
         self.active_palette_slot = None
 
+    def set_current_palette_slot_game(self, target: GamePaletteTarget) -> None:
+        self.writer.tap("Y")
+        self.writer.wait(int(self.timing.get("menu_open_frames", 8)))
+        self.writer.tap("Y")
+        self.writer.wait(int(self.timing.get("screen_settle_frames", 4)))
+        self.navigate_game_palette_target(target)
+        self.writer.tap("A")
+        self.writer.wait(int(self.timing.get("screen_settle_frames", 4)))
+        self.writer.tap("B")
+        self.writer.wait(int(self.timing.get("menu_close_frames", 8)))
+        self.active_palette_slot = None
+
     def navigate_to_slot(self, slot_index: int) -> None:
         self._validate_slot(slot_index)
         self.writer.hold("D", int(self.timing.get("slot_anchor_hold_frames", 18)))
@@ -90,6 +102,27 @@ class ColorPicker:
     def set_colour_rect_press_count(self, saturation_presses: int, brightness_presses: int) -> None:
         self._anchor_colour_rect_bottom_left(reset_hue=False)
         self._move_colour_rect_to_press_count(saturation_presses, brightness_presses)
+
+    def navigate_game_palette_target(self, target: GamePaletteTarget) -> None:
+        rows = int(self.config.get("game_palette_rows", 7))
+        cols = int(self.config.get("game_palette_cols", 11))
+        extras = int(self.config.get("game_palette_extras", 7))
+        if target.kind == "grid":
+            if target.col is None or target.row > rows or target.col > cols:
+                raise ValueError(f"game palette grid target is outside {rows}x{cols}")
+            right_steps = target.col - 1
+            down_steps = target.row - 1
+        elif target.kind == "extra":
+            if target.row > extras:
+                raise ValueError(f"game palette extra target is outside 1..{extras}")
+            right_steps = cols
+            down_steps = target.row - 1
+        else:
+            raise ValueError("game palette target kind must be 'grid' or 'extra'")
+
+        self._anchor_game_palette_top_left()
+        self.writer.dpad("R", right_steps)
+        self.writer.dpad("D", down_steps)
 
     def _move_colour_rect_to_press_count(
         self,
@@ -199,6 +232,22 @@ class ColorPicker:
 
     def _anchor_colour_rect_top_right(self) -> None:
         self._anchor_colour_rect_corner("R", "U")
+
+    def _anchor_game_palette_top_left(self) -> None:
+        hold_frames = int(
+            self.timing.get(
+                "game_palette_anchor_hold_frames",
+                self.timing.get("slot_anchor_hold_frames", 18),
+            )
+        )
+        settle_frames = int(
+            self.timing.get(
+                "game_palette_anchor_settle_frames",
+                self.timing.get("slot_anchor_release_frames", 2),
+            )
+        )
+        self.writer.hold(["L", "U"], hold_frames)
+        self.writer.release(settle_frames)
 
     def _anchor_colour_rect_corner(self, horizontal: str, vertical: str) -> None:
         method = str(self.config.get("anchor_colour_rect_method", "analog"))

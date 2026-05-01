@@ -9,7 +9,7 @@ English documentation: [README.md](README.md).
 ## 流程
 
 1. 在 Living the Grid 上传图片。
-2. 选择 `square`、`smooth`、`1px`、`game` palette。
+2. 选择 `square`、`smooth`、`1px / 3px / 7px / 13px / 19px / 27px` 之一、`game` palette。
 3. 设置 `max colours`，例如 `12`。
 4. 导出 `JSON (per-pixel data)`。
 5. 运行本工具生成 SwiCC 宏。
@@ -63,7 +63,7 @@ uv run python swicc_runner.py --list-ports
 # 先检查文件顺序和编码预览，不碰串口
 uv run python swicc_runner.py out/nkidhr/color_*.txt --dry-run
 
-# 匹配手柄后按文件名顺序发送
+# 匹配手柄后等待 4 秒，再按文件名顺序发送
 uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-controller
 ```
 
@@ -88,7 +88,7 @@ uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-control
 - `files`：生成的 `.txt` 文件或 glob，例如 `out/nkidhr/color_*.txt`。
 - `--list-ports`：列出可用串口。
 - `--port COM5`：选择 B 板 USB-UART 串口。
-- `--match-controller`：发送匹配手柄宏。
+- `--match-controller`：发送匹配手柄宏；如果同时提供文件，会等待 4 秒再开始绘画。
 - `--dry-run`：只解析和预览，不访问串口。
 - `--vsync-delay N`：默认 `-1`，即禁用 VSYNC delay。
 
@@ -127,11 +127,11 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 ## 游戏内准备
 
 1. 进入 face paint 绘制界面。
-2. 选择最细方形像素笔刷。
+2. 选择与 Living the Grid JSON 一致的方形 smooth 笔刷大小。
 3. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
 4. 运行宏前不要手动改变当前色板格，特别是 `--split-by-color`。
 
-生成的宏会负责打开色板、进入完整 HSB 选色器、复位 Hue 和颜色方块，再按 JSON 里的 `press.h/s/b` 调色。`color_*.txt` 会在开头硬复位到画布左上：左上推摇杆 7 秒，再向右 192、向下 77。
+生成的宏会把一个 Living the Grid cell 当作一个笔刷 stamp，移动距离按 `brush.px` 放大。如果每个用到的颜色都带 `game: {row, col}`、`game: {extra}` 或 `R1·C1` 这类 label，宏会留在默认 84 色盘里选色。否则会打开 H/S/B 选色器，并按 JSON 里的 `press.h/s/b` 调色。`color_*.txt` 会在开头硬复位到画布左上：左上推摇杆 7 秒，再向右 192、向下 77。
 
 ## 配置
 
@@ -140,6 +140,7 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 常调字段：
 
 - `timing.*`：按键、移动、菜单等待时间。
+- `game_palette_*`：默认 Game Palette 导航尺寸和复位等待。
 - `movement_chunk_size` / `movement_chunk_settle_frames`：长距离移动时分块停顿。
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`：`color_*.txt` 开头硬复位后的回退步数。
 - `timing.canvas_reset_*`：`color_*.txt` 开头硬复位的摇杆保持和停顿时间。

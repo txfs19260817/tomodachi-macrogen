@@ -1,7 +1,7 @@
 import unittest
 
 from src.color_picker import ColorPicker
-from src.living_grid import PressCounts
+from src.living_grid import GamePaletteTarget, PressCounts
 from src.macro_writer import MacroWriter
 
 
@@ -208,6 +208,56 @@ class TestColorPickerPress(unittest.TestCase):
         reset_index = lines.index("{L2} (0 255 128 128) 9")
         hue_index = lines.index("{R2} 1")
         self.assertLess(reset_index, hue_index)
+
+    def test_current_slot_game_palette_uses_default_palette_without_r_tab(self) -> None:
+        config = {
+            "game_palette_cols": 11,
+            "timing": {
+                "tap_hold_frames": 1,
+                "tap_release_frames": 1,
+                "menu_open_frames": 1,
+                "screen_settle_frames": 1,
+                "menu_close_frames": 1,
+                "game_palette_anchor_hold_frames": 3,
+                "game_palette_anchor_settle_frames": 2,
+                "movement_hold_frames": 1,
+                "movement_release_frames": 1,
+            },
+        }
+        writer = MacroWriter(config)
+        picker = ColorPicker(writer, config)
+
+        picker.set_current_palette_slot_game(GamePaletteTarget(kind="grid", row=2, col=3))
+
+        lines = [line.text for line in writer.lines]
+        self.assertNotIn("{R1} 1", lines)
+        self.assertIn("{L U} 3", lines)
+        self.assertEqual(lines.count("{R} 1"), 2)
+        self.assertEqual(lines.count("{D} 1"), 1)
+
+    def test_current_slot_game_palette_extra_uses_side_strip_column(self) -> None:
+        config = {
+            "game_palette_cols": 11,
+            "timing": {
+                "tap_hold_frames": 1,
+                "tap_release_frames": 1,
+                "menu_open_frames": 1,
+                "screen_settle_frames": 1,
+                "menu_close_frames": 1,
+                "game_palette_anchor_hold_frames": 3,
+                "game_palette_anchor_settle_frames": 2,
+                "movement_hold_frames": 1,
+                "movement_release_frames": 1,
+            },
+        }
+        writer = MacroWriter(config)
+        picker = ColorPicker(writer, config)
+
+        picker.set_current_palette_slot_game(GamePaletteTarget(kind="extra", row=2))
+
+        lines = [line.text for line in writer.lines]
+        self.assertEqual(lines.count("{R} 1"), 11)
+        self.assertEqual(lines.count("{D} 1"), 1)
 
 
 if __name__ == "__main__":

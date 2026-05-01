@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -13,11 +14,19 @@ class PressCounts:
 
 
 @dataclass(frozen=True)
+class GamePaletteTarget:
+    kind: str
+    row: int
+    col: int | None = None
+
+
+@dataclass(frozen=True)
 class LivingGridPaletteEntry:
     color_index: int
     hex: str
     rgb: tuple[int, int, int]
     press: PressCounts
+    game: GamePaletteTarget | None
     pixel_count: int
 
 
@@ -32,6 +41,13 @@ class LivingGridData:
     palette: list[LivingGridPaletteEntry]
     indices: list[list[int | None]]
     preview: Image.Image
+
+    @property
+    def brush_px(self) -> int:
+        px = self.brush.get("px", 1)
+        if not isinstance(px, int) or px < 1:
+            raise ValueError("brush.px must be a positive integer")
+        return px
 
 
 def load_living_grid_json(path: str | Path) -> LivingGridData:
@@ -108,8 +124,41 @@ def _parse_palette_entry(
         hex=str(entry.get("hex", "")),
         rgb=(int(rgb[0]), int(rgb[1]), int(rgb[2])),
         press=press_counts,
+        game=_parse_game_palette_target(entry, color_index),
         pixel_count=pixel_count,
     )
+
+
+def _parse_game_palette_target(entry: dict[str, Any], color_index: int) -> GamePaletteTarget | None:
+    raw = entry.get("game")
+    if isinstance(raw, dict):
+        if "extra" in raw:
+            extra = _parse_positive_int(raw["extra"], f"palette[{color_index}].game.extra")
+            return GamePaletteTarget(kind="extra", row=extra)
+        row = _parse_positive_int(raw.get("row"), f"palette[{color_index}].game.row")
+        col = _parse_positive_int(raw.get("col"), f"palette[{color_index}].game.col")
+        return GamePaletteTarget(kind="grid", row=row, col=col)
+
+    label = entry.get("label")
+    if isinstance(label, str):
+        grid_match = re.fullmatch(r"\s*R\s*(\d+)\s*[·.:\- ]\s*C\s*(\d+)\s*", label, re.I)
+        if grid_match:
+            return GamePaletteTarget(
+                kind="grid",
+                row=int(grid_match.group(1)),
+                col=int(grid_match.group(2)),
+            )
+        extra_match = re.fullmatch(r"\s*(?:E|Extra)\s*(\d+)\s*", label, re.I)
+        if extra_match:
+            return GamePaletteTarget(kind="extra", row=int(extra_match.group(1)))
+
+    return None
+
+
+def _parse_positive_int(value: Any, label: str) -> int:
+    if not isinstance(value, int) or value < 1:
+        raise ValueError(f"{label} must be a positive integer")
+    return value
 
 
 def _parse_press(press: dict[str, Any], key: str, color_index: int) -> int:

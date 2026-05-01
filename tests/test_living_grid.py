@@ -41,6 +41,35 @@ class TestLivingGrid(unittest.TestCase):
         self.assertEqual(grid.palette[1].pixel_count, 1)
         self.assertEqual(grid.preview.getpixel((1, 0)), (0, 0, 0, 0))
 
+    def test_reads_brush_px_and_optional_game_palette_target(self) -> None:
+        path = _write_fixture(
+            {
+                "brush": {"mode": "smooth", "px": 3},
+                "palette": [
+                    {
+                        "hex": "#FFFFFF",
+                        "rgb": [255, 255, 255],
+                        "press": {"h": 201, "s": 0, "b": 110},
+                        "game": {"row": 1, "col": 1},
+                    },
+                    {
+                        "hex": "#000000",
+                        "rgb": [0, 0, 0],
+                        "press": {"h": 201, "s": 0, "b": 0},
+                        "label": "Extra 2",
+                    },
+                ],
+            }
+        )
+
+        grid = load_living_grid_json(path)
+
+        self.assertEqual(grid.brush_px, 3)
+        self.assertEqual(grid.palette[0].game.row, 1)
+        self.assertEqual(grid.palette[0].game.col, 1)
+        self.assertEqual(grid.palette[1].game.kind, "extra")
+        self.assertEqual(grid.palette[1].game.row, 2)
+
 
 def _write_fixture(overrides: dict[str, object] | None = None) -> Path:
     data = {

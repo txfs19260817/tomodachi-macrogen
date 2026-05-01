@@ -21,16 +21,16 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 {} 10
 ```
 
-如果 Switch 能识别并响应，再继续发送绘图文件。
+如果同一条命令里还提供了绘图文件，runner 会在配对输入后等待 4 秒再继续发送。
 
 ## 游戏内准备
 
 1. 进入 face paint 绘制界面。
-2. 选择最细方形像素笔刷。
+2. 选择与本次 Living the Grid JSON 一致的方形 smooth 笔刷大小。
 3. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
 4. 不要手动切换当前色板格，特别是运行 `color_*.txt` 时。
 
-宏会自己打开色板、进入 HSB 选色器、复位 Hue 和颜色方块，再设置颜色。`color_*.txt` 开头会硬复位到画布左上，不在结尾主动回归。
+如果 JSON 里所有用到的颜色都有默认 84 色盘坐标，宏会留在 Game Palette 按坐标选色。否则宏会打开 HSB 选色器、复位 Hue 和颜色方块，再设置颜色。`color_*.txt` 开头会硬复位到画布左上，不在结尾主动回归。
 
 ## 运行文件
 
