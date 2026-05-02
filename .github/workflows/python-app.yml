@@ -1,0 +1,73 @@
+name: Build GUI
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.artifact_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2025
+            artifact_name: tomodachi-gui-windows-x64-portable
+          - os: macos-15
+            artifact_name: tomodachi-gui-macos-arm64-portable
+          - os: ubuntu-24.04
+            artifact_name: tomodachi-gui-linux-x64-portable
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.13
+
+      - name: Install Linux Qt runtime libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libxcb-cursor0 libxcb-xinerama0 libxkbcommon-x11-0
+
+      - name: Install dependencies
+        run: uv sync --locked --group build
+
+      - name: Run tests
+        run: uv run python -m unittest discover -s tests
+
+      - name: Build PyQt6 GUI
+        run: uv run --group build python scripts/build_gui.py
+
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $name = "${{ matrix.artifact_name }}"
+
+          if ($env:RUNNER_OS -eq "Windows") {
+            Compress-Archive -Path "dist/tomodachi-gui" -DestinationPath "artifacts/$name.zip"
+          } elseif ($env:RUNNER_OS -eq "macOS") {
+            tar -czf "artifacts/$name.tar.gz" -C dist "tomodachi-gui.app"
+          } else {
+            tar -czf "artifacts/$name.tar.gz" -C dist "tomodachi-gui"
+          }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/*
+          if-no-files-found: error
