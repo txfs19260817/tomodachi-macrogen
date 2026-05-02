@@ -1,5 +1,6 @@
 import sys
 import time
+from html import escape
 from io import BytesIO
 from pathlib import Path
 from threading import Event
@@ -135,6 +136,7 @@ def main() -> int:
             self.status_key: str | None = "status.ready"
             self.status_kwargs: dict[str, object] = {}
             self.current_theme = "light"
+            self.link_color = "#21666c"
             self.threads: list[QThread] = []
             self.workers: list[QObject] = []
 
@@ -193,6 +195,18 @@ def main() -> int:
             self.subtitle_label.setWordWrap(True)
             right_layout.addLayout(hero_row)
             right_layout.addWidget(self.subtitle_label)
+            self.living_grid_link = QLabel()
+            self.living_grid_link.setObjectName("ExternalLink")
+            self.living_grid_link.setTextFormat(Qt.TextFormat.RichText)
+            self.living_grid_link.setOpenExternalLinks(False)
+            self.living_grid_link.setTextInteractionFlags(
+                Qt.TextInteractionFlag.LinksAccessibleByMouse
+                | Qt.TextInteractionFlag.LinksAccessibleByKeyboard,
+            )
+            self.living_grid_link.linkActivated.connect(
+                lambda _url: self.open_living_grid(),
+            )
+            right_layout.addWidget(self.living_grid_link)
 
             self.generate_group = QGroupBox()
             generate_layout = QGridLayout(self.generate_group)
@@ -200,8 +214,6 @@ def main() -> int:
             self.input_edit = QLineEdit()
             self.input_button = QPushButton()
             self.input_button.clicked.connect(self.choose_json)
-            self.living_grid_button = QPushButton()
-            self.living_grid_button.clicked.connect(self.open_living_grid)
             self.split_color_check = QCheckBox()
             self.split_color_check.setChecked(True)
             self.generate_button = QPushButton()
@@ -217,7 +229,6 @@ def main() -> int:
             generate_layout.addWidget(self.output_text_label, 1, 0)
             generate_layout.addWidget(self.output_hint_label, 1, 1, 1, 2)
             generate_layout.addWidget(self.split_color_check, 2, 1, 1, 2)
-            generate_layout.addWidget(self.living_grid_button, 3, 1)
             generate_layout.addWidget(self.generate_button, 3, 2)
             right_layout.addWidget(self.generate_group)
 
@@ -335,8 +346,7 @@ def main() -> int:
             self.output_text_label.setText(tr("generate.output"))
             self.input_edit.setPlaceholderText(tr("generate.input_placeholder"))
             self.input_button.setText(tr("generate.choose_json"))
-            self.living_grid_button.setText(tr("generate.open_living_grid"))
-            self.living_grid_button.setToolTip(tr("generate.open_living_grid_tooltip"))
+            self.update_living_grid_link()
             self.output_hint_label.setText(tr("generate.output_hint"))
             self.split_color_check.setText(tr("generate.split_by_color"))
             self.generate_button.setText(tr("generate.button"))
@@ -352,6 +362,16 @@ def main() -> int:
             self.update_current_file_label()
             self.update_meta_label()
             self.update_status_label()
+
+        def update_living_grid_link(self) -> None:
+            label = escape(tr("generate.open_living_grid"))
+            self.living_grid_link.setText(
+                '<a style="'
+                f"color: {self.link_color}; "
+                'text-decoration: underline;" '
+                f'href="{LIVING_THE_GRID_URL}">{label}</a>',
+            )
+            self.living_grid_link.setToolTip(tr("generate.open_living_grid_tooltip"))
 
         def apply_theme(self, theme: str) -> None:
             self.current_theme = theme
@@ -400,6 +420,7 @@ def main() -> int:
                     "primary_text": "#fff8ea",
                     "chunk": "#d58b3a",
                 }
+            self.link_color = colors["primary"]
             self.setStyleSheet(
                 f"""
                 QMainWindow {{ background: {colors["window"]}; }}
@@ -451,6 +472,10 @@ def main() -> int:
                     color: {colors["text"]};
                     font-size: 18px;
                     font-weight: 700;
+                }}
+                QLabel#ExternalLink {{
+                    font-weight: 650;
+                    padding: 0 0 2px 2px;
                 }}
                 QLabel#Muted {{ color: {colors["muted"]}; }}
                 QLabel#PreviewLabel {{
@@ -521,6 +546,8 @@ def main() -> int:
                 }}
                 """
             )
+            if hasattr(self, "living_grid_link"):
+                self.update_living_grid_link()
 
         def choose_json(self) -> None:
             path, _ = QFileDialog.getOpenFileName(
