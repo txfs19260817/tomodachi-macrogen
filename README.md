@@ -12,14 +12,14 @@ This project no longer accepts image input. Living the Grid handles quantization
 2. Select `square`, `smooth`, one of `1px / 3px / 7px / 13px / 19px / 27px`, and the `game` palette.
 3. Set `max colours`, for example `12`.
 4. Export `JSON (per-pixel data)`.
-5. Generate SwiCC macros with this tool.
-6. Send the generated `.txt` files in order with `swicc_runner.py`.
+5. Run this tool to generate SwiCC macros.
+6. If `--port` is provided, the same command pairs the controller and sends the drawing.
 
 ```bash
-uv run python tomodachi_macrogen.py input.json
+uv run tomodachi-macrogen input.json --port COM5 --split-by-color
 ```
 
-Default output goes to `out/input/`. For example, `abc.json` writes to `out/abc/`.
+Output always goes to `out/<input-name>-<timestamp>/`.
 
 ## Install
 
@@ -39,40 +39,62 @@ uv run python -m unittest discover -s tests
 ## Common Commands
 
 ```bash
-# Generate macros, default split is 50000 lines per part
-uv run python tomodachi_macrogen.py input.json
+# Open the native GUI
+uv run tomodachi-gui
 
-# Disable line splitting
-uv run python tomodachi_macrogen.py input.json --split-lines 0
+# List serial ports
+uv run tomodachi-macrogen --list-ports
 
-# Split into one file per color
-uv run python tomodachi_macrogen.py input.json --split-by-color
+# Generate, pair the controller, then draw
+uv run tomodachi-macrogen input.json --port COM5 --split-by-color
+
+# Only pair the controller
+uv run tomodachi-macrogen --port COM5 --match-controller
+
+# Generate files only, without touching serial
+uv run tomodachi-macrogen input.json --split-by-color
 
 # Clean generated outputs and caches
-uv run python tomodachi_macrogen.py --clean-output --clean-cache
+uv run tomodachi-macrogen --clean-output --clean-cache
 ```
 
-## Python Serial Sender
+## Build Portable GUI Artifacts
 
-Use `swicc_runner.py` to send generated `.txt` files through the Board B USB-UART port:
+GitHub Actions workflow `.github/workflows/build-gui.yml` builds portable native GUI
+archives on Windows, macOS, and Linux with PyInstaller onedir. Run it manually from
+Actions, or push a tag such as `v0.1.0`.
 
-```bash
-# List serial ports
-uv run python swicc_runner.py --list-ports
+No installer is produced. Download the artifact, extract it, then run:
 
-# Check file order and encoded preview without touching serial
-uv run python swicc_runner.py out/nkidhr/color_*.txt --dry-run
+- Windows: `tomodachi-gui/tomodachi-gui.exe`
+- macOS: `tomodachi-gui.app`
+- Linux: `tomodachi-gui/tomodachi-gui`
 
-# Pair the controller, wait 4 seconds, then send files in filename order
-uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-controller
-```
+The artifacts are unsigned, so Windows/macOS may show the usual first-run warning.
 
-This runner sends macros using SwiCC `+Q` encoding and `+GQF` queue polling.
+## Unified CLI
+
+`tomodachi-macrogen` is the main command. With an input JSON and `--port`, it writes a
+timestamped output directory, sends the controller pairing macro, waits 4 seconds, then
+sends the generated drawing macros using SwiCC `+Q` encoding and `+GQF` queue polling.
+
+Without `--port`, it only generates files. With `--match-controller` and no input, it only
+sends the pairing macro.
+
+## Native GUI
+
+Run `uv run tomodachi-gui` to open the PyQt6 GUI. It provides the same workflow as the
+CLI: choose a Living the Grid JSON, generate output, pair the controller, then send the
+generated files while showing progress. The GUI renders the JSON preview, supports
+Chinese/English plus light/dark themes, and keeps serial work in a background thread; it
+does not load long macro text into a text box.
 
 ## CLI
 
 - `input`: Living the Grid JSON.
-- `--out OUT`: output directory; relative paths are placed under project `out/`.
+- `--port COM5`: generate, pair, and draw through the selected serial port.
+- `--list-ports`: list available serial ports.
+- `--match-controller`: with no input, only send the controller pairing macro.
 - `--config CONFIG`: extra config JSON overriding `config.default.json`.
 - `--palette-slots N`: available in-game palette slots, default `9`.
 - `--color-order frequency|original-palette|luminance|hue`: color order, default `original-palette`, matching Living the Grid UI order.
@@ -82,15 +104,6 @@ This runner sends macros using SwiCC `+Q` encoding and `+GQF` queue polling.
 - `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
 
 The drawing path is fixed to same-color horizontal run planning. Path mode flags were removed.
-
-## swicc_runner.py CLI
-
-- `files`: generated `.txt` files or globs, for example `out/nkidhr/color_*.txt`.
-- `--list-ports`: list available serial ports.
-- `--port COM5`: select the Board B USB-UART serial port.
-- `--match-controller`: send the controller pairing macro; when files are also provided, wait 4 seconds before drawing.
-- `--dry-run`: parse and preview without serial access.
-- `--vsync-delay N`: default `-1`, meaning VSYNC delay is disabled.
 
 ## Outputs
 

@@ -4,12 +4,14 @@ from pathlib import Path
 
 from swicc_runner import (
     MATCH_CONTROLLER_SETTLE_FRAMES,
+    FileProgressTracker,
     MacroCommand,
     build_command_list,
     convert_button_string,
     encode_macro_command,
     expand_macro_paths,
     parse_macro_line,
+    send_next_batch,
 )
 
 
@@ -67,6 +69,34 @@ class TestSwiccRunner(unittest.TestCase):
         self.assertFalse(
             any(command.source == "controller-match-settle" for command in commands)
         )
+
+    def test_file_progress_tracker_reports_current_file(self) -> None:
+        commands = [
+            MacroCommand(buttons="A", frames=3, source="out/color_01.txt:1"),
+            MacroCommand(buttons="B", frames=2, source="out/color_02.txt:1"),
+        ]
+        tracker = FileProgressTracker(commands)
+
+        self.assertIsNone(tracker.update(1))
+        self.assertEqual(tracker.update(2), (1, 2, "color_01.txt"))
+        self.assertEqual(tracker.update(5), (2, 2, "color_02.txt"))
+
+    def test_send_next_batch_stops_when_cancelled(self) -> None:
+        writes: list[bytes] = []
+
+        class FakeSerial:
+            def write(self, data: bytes) -> None:
+                writes.append(data)
+
+            def flush(self) -> None:
+                pass
+
+        lines = iter(["+Q 1\n", "+Q 2\n"])
+
+        sent = send_next_batch(FakeSerial(), lines, 10, should_cancel=lambda: bool(writes))
+
+        self.assertEqual(sent, 1)
+        self.assertEqual(writes, [b"+Q 1\n"])
 
 
 if __name__ == "__main__":

@@ -2,13 +2,17 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from PIL import Image
 
 from src.living_grid import load_living_grid_json
 from src.path_planner import plan_color_pixels
-from tomodachi_macrogen import build_living_grid_colors, generate_color_split_macros, main
+from tomodachi_macrogen import (
+    GenerationOptions,
+    build_living_grid_colors,
+    generate_color_split_macros,
+    generate_macros,
+)
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "example.json"
 
@@ -16,16 +20,15 @@ FIXTURE = Path(__file__).resolve().parent / "fixtures" / "example.json"
 class TestSplitByColor(unittest.TestCase):
     def test_split_by_color_writes_one_file_per_used_color(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            out_dir = Path(tmp) / "color_parts"
-            argv = [
-                "tomodachi_macrogen.py",
-                str(FIXTURE),
-                "--out",
-                str(out_dir),
-                "--split-by-color",
-            ]
-            with patch("sys.argv", argv):
-                self.assertEqual(main(), 0)
+            result = generate_macros(
+                FIXTURE,
+                GenerationOptions(
+                    output_root=tmp,
+                    timestamp="color_parts",
+                    split_by_color=True,
+                ),
+            )
+            out_dir = result.out_dir
 
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["split_strategy"], "color")
@@ -85,11 +88,12 @@ class TestSplitByColor(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as tmp:
             input_path = Path(tmp) / "game.json"
-            out_dir = Path(tmp) / "out"
             input_path.write_text(json.dumps(payload), encoding="utf-8")
-            argv = ["tomodachi_macrogen.py", str(input_path), "--out", str(out_dir)]
-            with patch("sys.argv", argv):
-                self.assertEqual(main(), 0)
+            result = generate_macros(
+                input_path,
+                GenerationOptions(output_root=tmp, timestamp="out"),
+            )
+            out_dir = result.out_dir
 
             part = (out_dir / "image_part1.txt").read_text(encoding="utf-8")
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
@@ -99,7 +103,7 @@ class TestSplitByColor(unittest.TestCase):
             self.assertIn("{L U}", part)
             self.assertEqual(part.count("{A R}"), 3)
 
-    def test_missing_game_palette_coordinates_uses_full_color_picker(self) -> None:
+    def test_known_game_palette_rgb_uses_game_palette_without_explicit_coordinates(self) -> None:
         payload = {
             "source": "living-the-grid.com",
             "version": 2,
@@ -109,20 +113,53 @@ class TestSplitByColor(unittest.TestCase):
             "canvas": {"preset": "square", "w": 1, "h": 1},
             "palette": [
                 {
-                    "hex": "#FFFFFF",
-                    "rgb": [255, 255, 255],
-                    "press": {"h": 201, "s": 0, "b": 110},
+                    "hex": "#EBEBEB",
+                    "rgb": [235, 235, 235],
+                    "press": {"h": 0, "s": 0, "b": 91},
                 }
             ],
             "pixels": [[0]],
         }
         with tempfile.TemporaryDirectory() as tmp:
             input_path = Path(tmp) / "auto.json"
-            out_dir = Path(tmp) / "out"
             input_path.write_text(json.dumps(payload), encoding="utf-8")
-            argv = ["tomodachi_macrogen.py", str(input_path), "--out", str(out_dir)]
-            with patch("sys.argv", argv):
-                self.assertEqual(main(), 0)
+            result = generate_macros(
+                input_path,
+                GenerationOptions(output_root=tmp, timestamp="out"),
+            )
+            out_dir = result.out_dir
+
+            part = (out_dir / "image_part1.txt").read_text(encoding="utf-8")
+            manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["palette_source"], "game")
+            self.assertNotIn("{R1}", part)
+            self.assertIn("{L U}", part)
+
+    def test_unknown_palette_rgb_uses_full_color_picker(self) -> None:
+        payload = {
+            "source": "living-the-grid.com",
+            "version": 2,
+            "width": 1,
+            "height": 1,
+            "brush": {"mode": "smooth", "px": 1},
+            "canvas": {"preset": "square", "w": 1, "h": 1},
+            "palette": [
+                {
+                    "hex": "#123456",
+                    "rgb": [18, 52, 86],
+                    "press": {"h": 100, "s": 100, "b": 50},
+                }
+            ],
+            "pixels": [[0]],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "auto.json"
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+            result = generate_macros(
+                input_path,
+                GenerationOptions(output_root=tmp, timestamp="out"),
+            )
+            out_dir = result.out_dir
 
             part = (out_dir / "image_part1.txt").read_text(encoding="utf-8")
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))

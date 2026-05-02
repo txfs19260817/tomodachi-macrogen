@@ -1,11 +1,10 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from PIL import Image
 
-from tomodachi_macrogen import main
+from tomodachi_macrogen import GenerationOptions, generate_macros
 
 COLOR_ORDERS = ("frequency", "original-palette", "luminance", "hue")
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "example.json"
@@ -18,17 +17,15 @@ class TestOutputInvariance(unittest.TestCase):
 
             for color_order in COLOR_ORDERS:
                 with self.subTest(color_order=color_order):
-                    out_dir = Path(tmp) / color_order
-                    argv = [
-                        "tomodachi_macrogen.py",
-                        str(FIXTURE),
-                        "--out",
-                        str(out_dir),
-                        "--color-order",
-                        color_order,
-                    ]
-                    with patch("sys.argv", argv):
-                        self.assertEqual(main(), 0)
+                    result = generate_macros(
+                        FIXTURE,
+                        GenerationOptions(
+                            output_root=tmp,
+                            timestamp=color_order,
+                            color_order=color_order,
+                        ),
+                    )
+                    out_dir = result.out_dir
 
                     self.assertTrue((out_dir / "README_RUN.md").exists())
                     self.assertTrue((out_dir / "README_RUN-en.md").exists())

@@ -13,13 +13,13 @@ English documentation: [README.md](README.md).
 3. 设置 `max colours`，例如 `12`。
 4. 导出 `JSON (per-pixel data)`。
 5. 运行本工具生成 SwiCC 宏。
-6. 用 `swicc_runner.py` 按顺序发送生成的 `.txt`。
+6. 如果提供 `--port`，同一条命令会匹配手柄并发送绘图。
 
 ```bash
-uv run python tomodachi_macrogen.py input.json
+uv run tomodachi-macrogen input.json --port COM5 --split-by-color
 ```
 
-默认输出到 `out/input/`。例如 `abc.json` 会生成到 `out/abc/`。
+输出固定写入 `out/<JSON 文件名>-<时间戳>/`。
 
 ## 安装
 
@@ -39,40 +39,60 @@ uv run python -m unittest discover -s tests
 ## 常用命令
 
 ```bash
-# 生成宏，默认每 50000 行切一个 part
-uv run python tomodachi_macrogen.py input.json
+# 打开原生 GUI
+uv run tomodachi-gui
 
-# 不切分，只生成一个 image_part1.txt
-uv run python tomodachi_macrogen.py input.json --split-lines 0
+# 查看串口
+uv run tomodachi-macrogen --list-ports
 
-# 按颜色拆分，一个 txt 只画一种颜色
-uv run python tomodachi_macrogen.py input.json --split-by-color
+# 生成、匹配手柄、开始绘画
+uv run tomodachi-macrogen input.json --port COM5 --split-by-color
+
+# 只匹配手柄，不做其它事
+uv run tomodachi-macrogen --port COM5 --match-controller
+
+# 只生成文件，不碰串口
+uv run tomodachi-macrogen input.json --split-by-color
 
 # 清理输出和缓存
-uv run python tomodachi_macrogen.py --clean-output --clean-cache
+uv run tomodachi-macrogen --clean-output --clean-cache
 ```
 
-## Python 串口发送
+## 构建 Portable GUI 包
 
-用 `swicc_runner.py` 通过 B 板 USB-UART 发送生成的 `.txt`：
+GitHub Actions 工作流 `.github/workflows/build-gui.yml` 会用 PyInstaller onedir
+分别在 Windows、macOS、Linux 上构建免安装 GUI 压缩包。可以在 Actions 页面手动运行，
+也可以推送 `v0.1.0` 这类 tag 触发。
 
-```bash
-# 查看串口
-uv run python swicc_runner.py --list-ports
+不会生成安装器。下载 artifact 后解压，然后直接运行：
 
-# 先检查文件顺序和编码预览，不碰串口
-uv run python swicc_runner.py out/nkidhr/color_*.txt --dry-run
+- Windows：`tomodachi-gui/tomodachi-gui.exe`
+- macOS：`tomodachi-gui.app`
+- Linux：`tomodachi-gui/tomodachi-gui`
 
-# 匹配手柄后等待 4 秒，再按文件名顺序发送
-uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-controller
-```
+产物未签名，Windows/macOS 首次运行时可能会有系统提示。
 
-这个 runner 使用 SwiCC `+Q` 编码和 `+GQF` 队列轮询发送宏。
+## 统一 CLI
+
+`tomodachi-macrogen` 是主命令。提供 JSON 和 `--port` 时，它会写入带时间戳的
+输出目录，发送匹配手柄宏，等待 4 秒，然后用 SwiCC `+Q` 编码和 `+GQF` 队列轮询
+发送绘图宏。
+
+不提供 `--port` 时只生成文件。不提供 JSON 且使用 `--match-controller` 时，只发送
+匹配手柄宏。
+
+## 原生 GUI
+
+运行 `uv run tomodachi-gui` 打开 PyQt6 GUI。它把 CLI 的流程放到一个窗口里：
+选择 Living the Grid JSON、生成输出、匹配手柄、发送绘图并显示进度。GUI 会渲染
+JSON 预览图，支持中文/英文和亮色/暗色主题，串口发送在后台线程执行，不会把长宏文本塞进文本框。
 
 ## CLI
 
 - `input`：Living the Grid JSON。
-- `--out OUT`：输出目录；相对路径会放到项目 `out/` 下。
+- `--port COM5`：通过指定串口生成、匹配手柄并绘画。
+- `--list-ports`：列出可用串口。
+- `--match-controller`：不提供 JSON 时，只发送匹配手柄宏。
 - `--config CONFIG`：额外配置，会覆盖 `config.default.json`。
 - `--palette-slots N`：游戏内可用色板格数，默认 `9`。
 - `--color-order frequency|original-palette|luminance|hue`：颜色顺序，默认 `original-palette`，也就是 Living the Grid UI 顺序。
@@ -82,15 +102,6 @@ uv run python swicc_runner.py out/nkidhr/color_*.txt --port COM5 --match-control
 - `--clean-cache`：删除 `.ruff_cache`、`__pycache__` 等缓存。
 
 绘图路径固定为同色水平连续段规划，不再暴露路径模式 flag。
-
-## swicc_runner.py CLI
-
-- `files`：生成的 `.txt` 文件或 glob，例如 `out/nkidhr/color_*.txt`。
-- `--list-ports`：列出可用串口。
-- `--port COM5`：选择 B 板 USB-UART 串口。
-- `--match-controller`：发送匹配手柄宏；如果同时提供文件，会等待 4 秒再开始绘画。
-- `--dry-run`：只解析和预览，不访问串口。
-- `--vsync-delay N`：默认 `-1`，即禁用 VSYNC delay。
 
 ## 输出
 

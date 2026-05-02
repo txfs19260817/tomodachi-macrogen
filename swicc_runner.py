@@ -2,7 +2,7 @@ import argparse
 import glob
 import re
 import time
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -49,6 +49,18 @@ class RunnerStats:
     file_count: int
     line_count: int
     frame_count: int
+
+
+@dataclass(frozen=True)
+class TransferProgress:
+    sent_frames: int
+    total_frames: int
+    queue_fill: int | None = None
+    done: bool = False
+    cancelled: bool = False
+    current_file_index: int | None = None
+    total_files: int | None = None
+    current_file: str | None = None
 
 
 def main() -> int:
@@ -353,36 +365,162 @@ def run_serial_transfer(
     queue_threshold: int,
     response_timeout: float,
     poll_interval: float,
+    progress_callback: Callable[[TransferProgress], None] | None = None,
+    should_cancel: Callable[[], bool] | None = None,
+    show_progress_bar: bool = True,
 ) -> None:
     serial_module = import_serial()
     total_frames = sum(command.frames for command in commands) + 4
     queue = iter_queue_lines(commands, include_neutral=True)
+    tracker = FileProgressTracker(commands)
     sent_frames = 0
 
     with serial_module.Serial(port, baud_rate, timeout=0.1, write_timeout=2) as serial_port:
-        progress = make_progress_bar(total_frames)
+        progress = make_progress_bar(total_frames) if show_progress_bar else None
         try:
             configure_swicc(serial_port, vsync_delay)
-            sent_now = send_next_batch(serial_port, queue, batch_size)
+            sent_now = send_next_batch(serial_port, queue, batch_size, should_cancel)
             sent_frames += sent_now
-            progress.update(sent_now)
+            update_transfer_progress(
+                progress,
+                progress_callback,
+                sent_frames=sent_frames,
+                total_frames=total_frames,
+                delta=sent_now,
+                file_status=tracker.update(sent_frames),
+            )
             write_serial_line(serial_port, "+GQF \n")
 
             while True:
+                if should_cancel is not None and should_cancel():
+                    update_transfer_progress(
+                        progress,
+                        progress_callback,
+                        sent_frames=sent_frames,
+                        total_frames=total_frames,
+                        queue_fill=None,
+                        done=True,
+                        cancelled=True,
+                        file_status=tracker.update(sent_frames),
+                    )
+                    return
                 fill = read_queue_fill(serial_port, response_timeout)
-                progress.set_postfix(queue=fill)
+                update_transfer_progress(
+                    progress,
+                    progress_callback,
+                    sent_frames=sent_frames,
+                    total_frames=total_frames,
+                    queue_fill=fill,
+                    file_status=tracker.update(sent_frames),
+                )
                 if fill < queue_threshold:
-                    sent_now = send_next_batch(serial_port, queue, batch_size)
+                    sent_now = send_next_batch(serial_port, queue, batch_size, should_cancel)
                     sent_frames += sent_now
-                    progress.update(sent_now)
+                    update_transfer_progress(
+                        progress,
+                        progress_callback,
+                        sent_frames=sent_frames,
+                        total_frames=total_frames,
+                        delta=sent_now,
+                        queue_fill=fill,
+                        file_status=tracker.update(sent_frames),
+                    )
                     if sent_now == 0 and fill <= 1:
-                        progress.update(total_frames - progress.n)
-                        progress.set_postfix(queue=fill)
+                        sent_frames = total_frames
+                        progress_delta = 0
+                        if progress is not None:
+                            progress_delta = total_frames - progress.n
+                        update_transfer_progress(
+                            progress,
+                            progress_callback,
+                            sent_frames=sent_frames,
+                            total_frames=total_frames,
+                            delta=progress_delta,
+                            queue_fill=fill,
+                            done=True,
+                            cancelled=False,
+                            file_status=tracker.update(sent_frames),
+                        )
                         return
                 time.sleep(poll_interval if fill >= queue_threshold else min(poll_interval, 0.1))
                 write_serial_line(serial_port, "+GQF \n")
         finally:
-            progress.close()
+            if progress is not None:
+                progress.close()
+
+
+def update_transfer_progress(
+    progress: Any | None,
+    progress_callback: Callable[[TransferProgress], None] | None,
+    *,
+    sent_frames: int,
+    total_frames: int,
+    delta: int = 0,
+    queue_fill: int | None = None,
+    done: bool = False,
+    cancelled: bool = False,
+    file_status: tuple[int, int, str] | None = None,
+) -> None:
+    if progress is not None:
+        if delta:
+            progress.update(delta)
+        if queue_fill is not None:
+            progress.set_postfix(queue=queue_fill)
+    if progress_callback is not None:
+        current_file_index = None
+        total_files = None
+        current_file = None
+        if file_status is not None:
+            current_file_index, total_files, current_file = file_status
+        progress_callback(
+            TransferProgress(
+                sent_frames=sent_frames,
+                total_frames=total_frames,
+                queue_fill=queue_fill,
+                done=done,
+                cancelled=cancelled,
+                current_file_index=current_file_index,
+                total_files=total_files,
+                current_file=current_file,
+            )
+        )
+
+
+class FileProgressTracker:
+    def __init__(self, commands: list[MacroCommand]) -> None:
+        self.entries: list[tuple[int, int, str]] = []
+        total = 2
+        last_file = ""
+        for command in commands:
+            file_name = command_source_file(command.source)
+            if file_name and file_name != last_file:
+                self.entries.append((total, 0, file_name))
+                last_file = file_name
+            total += command.frames
+        file_total = len(self.entries)
+        self.entries = [
+            (start_frame, index, file_name)
+            for index, (start_frame, _unused, file_name) in enumerate(self.entries, start=1)
+        ]
+        self.total_files = file_total
+
+    def update(self, sent_frames: int) -> tuple[int, int, str] | None:
+        current: tuple[int, int, str] | None = None
+        for start_frame, index, file_name in self.entries:
+            if sent_frames >= start_frame:
+                current = (index, self.total_files, file_name)
+            else:
+                break
+        return current
+
+
+def command_source_file(source: str) -> str | None:
+    if not source or source.startswith("controller-match"):
+        return None
+    raw_path = source.rsplit(":", 1)[0]
+    if not raw_path:
+        return None
+    return Path(raw_path).name
 
 
 def configure_swicc(serial_port: Any, vsync_delay: int) -> None:
@@ -395,9 +533,16 @@ def configure_swicc(serial_port: Any, vsync_delay: int) -> None:
     write_serial_line(serial_port, f"+VSD {max(0, min(15000, vsync_delay)):04X}\n")
 
 
-def send_next_batch(serial_port: Any, queue: Iterator[str], batch_size: int) -> int:
+def send_next_batch(
+    serial_port: Any,
+    queue: Iterator[str],
+    batch_size: int,
+    should_cancel: Callable[[], bool] | None = None,
+) -> int:
     sent = 0
     for _ in range(max(1, batch_size)):
+        if should_cancel is not None and should_cancel():
+            break
         try:
             write_serial_line(serial_port, next(queue))
         except StopIteration:

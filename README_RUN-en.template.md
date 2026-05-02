@@ -2,15 +2,16 @@
 
 ## Entry Point
 
-Use `swicc_runner.py` to send generated `.txt` files over serial:
+Normally you do not need to run the `.txt` files in this directory manually. The main
+command generates files, pairs the controller, and sends the drawing:
 
 ```bash
-uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-controller
+uv run tomodachi-macrogen input.json --port COM5 --split-by-color
 ```
 
 ## Pair Controller
 
-`--match-controller` sends this pairing input first:
+The main command sends this pairing input first:
 
 ```text
 {A} 10
@@ -21,7 +22,7 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 {} 10
 ```
 
-When drawing files are provided in the same command, the runner waits 4 seconds after pairing before sending them.
+When drawing files are provided in the same command, it waits 4 seconds after pairing before sending them.
 
 ## In-Game Setup
 
@@ -37,7 +38,7 @@ If every used JSON color includes default 84-color Game Palette coordinates, the
 - Normal output: run `image_part1.txt`, `image_part2.txt`, and so on.
 - Color split output: run `color_01_*.txt`, `color_02_*.txt`, and so on.
 
-Do not skip or reorder files. When using a glob, the runner sends files in natural filename order.
+Do not skip or reorder files.
 
 ## Hardware
 

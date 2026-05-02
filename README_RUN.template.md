@@ -2,15 +2,15 @@
 
 ## 入口
 
-用 `swicc_runner.py` 通过串口发送本工具生成的 `.txt`：
+通常不需要手动运行本目录里的 `.txt`。主命令会在生成后直接匹配手柄并发送：
 
 ```bash
-uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-controller
+uv run tomodachi-macrogen input.json --port COM5 --split-by-color
 ```
 
 ## 配对手柄
 
-`--match-controller` 会先发送这段配对输入：
+主命令会先发送这段配对输入：
 
 ```text
 {A} 10
@@ -21,7 +21,7 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 {} 10
 ```
 
-如果同一条命令里还提供了绘图文件，runner 会在配对输入后等待 4 秒再继续发送。
+如果同一条命令里还提供了绘图文件，会在配对输入后等待 4 秒再继续发送。
 
 ## 游戏内准备
 
@@ -37,7 +37,7 @@ uv run python swicc_runner.py out/<name>/color_*.txt --port COM5 --match-control
 - 普通输出：按顺序运行 `image_part1.txt`、`image_part2.txt`。
 - 按颜色输出：按顺序运行 `color_01_*.txt`、`color_02_*.txt`。
 
-不要跳过或打乱顺序。使用 glob 时，runner 会按文件名自然排序发送。
+不要跳过或打乱顺序。
 
 ## 硬件
 

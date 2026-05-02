@@ -1,5 +1,6 @@
 out/
 out_*/
+artifacts/
 *.uf2
 
 # Byte-compiled / optimized / DLL files
