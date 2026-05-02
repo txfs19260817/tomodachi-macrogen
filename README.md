@@ -31,9 +31,9 @@ uv sync
 Development checks:
 
 ```bash
-uv sync --group dev
+uv sync --group dev --group test
 uv run ruff check .
-uv run python -m unittest discover -s tests
+uv run pytest -n auto tests
 ```
 
 ## Common Commands
@@ -60,9 +60,13 @@ uv run tomodachi-macrogen --clean-output --clean-cache
 
 ## Build Portable GUI Artifacts
 
-GitHub Actions workflow `.github/workflows/build-gui.yml` builds portable native GUI
+GitHub Actions workflow `.github/workflows/python-app.yml` builds portable native GUI
 archives on Windows, macOS, and Linux with PyInstaller onedir. Run it manually from
-Actions, or push a tag such as `v0.1.0`.
+Actions, or push a semantic-version tag such as `v1.0.0`.
+
+Tag releases are the version hook: the workflow validates that `vX.Y.Z` matches
+`pyproject.toml`'s project version, then publishes the portable archives as GitHub
+Release assets.
 
 No installer is produced. Download the artifact, extract it, then run:
 

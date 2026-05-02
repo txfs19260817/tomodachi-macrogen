@@ -31,9 +31,9 @@ uv sync
 开发检查：
 
 ```bash
-uv sync --group dev
+uv sync --group dev --group test
 uv run ruff check .
-uv run python -m unittest discover -s tests
+uv run pytest -n auto tests
 ```
 
 ## 常用命令
@@ -60,9 +60,12 @@ uv run tomodachi-macrogen --clean-output --clean-cache
 
 ## 构建 Portable GUI 包
 
-GitHub Actions 工作流 `.github/workflows/build-gui.yml` 会用 PyInstaller onedir
+GitHub Actions 工作流 `.github/workflows/python-app.yml` 会用 PyInstaller onedir
 分别在 Windows、macOS、Linux 上构建免安装 GUI 压缩包。可以在 Actions 页面手动运行，
-也可以推送 `v0.1.0` 这类 tag 触发。
+也可以推送 `v1.0.0` 这类语义化版本 tag 触发。
+
+tag 发布就是版本 hook：workflow 会检查 `vX.Y.Z` 是否和 `pyproject.toml` 里的
+项目版本一致，然后把 portable 压缩包发布成 GitHub Release assets。
 
 不会生成安装器。下载 artifact 后解压，然后直接运行：
 

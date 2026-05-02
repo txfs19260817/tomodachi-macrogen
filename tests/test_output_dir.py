@@ -27,22 +27,32 @@ class TestOutputDir(unittest.TestCase):
             )
 
     def test_frozen_windows_output_root_is_next_to_exe(self) -> None:
-        self.assertEqual(
-            default_output_root(
-                frozen=True,
-                executable=Path("D:/portable/tomodachi-gui/tomodachi-gui.exe"),
-            ),
-            Path("D:/portable/tomodachi-gui/out"),
-        )
+        with tempfile.TemporaryDirectory() as tmp:
+            executable = Path(tmp) / "tomodachi-gui" / "tomodachi-gui.exe"
+            self.assertEqual(
+                default_output_root(
+                    frozen=True,
+                    executable=executable,
+                ),
+                executable.parent.resolve() / "out",
+            )
 
     def test_frozen_macos_output_root_is_next_to_app_bundle(self) -> None:
-        self.assertEqual(
-            default_output_root(
-                frozen=True,
-                executable=Path("D:/portable/tomodachi-gui.app/Contents/MacOS/tomodachi-gui"),
-            ),
-            Path("D:/portable/out"),
-        )
+        with tempfile.TemporaryDirectory() as tmp:
+            executable = (
+                Path(tmp)
+                / "tomodachi-gui.app"
+                / "Contents"
+                / "MacOS"
+                / "tomodachi-gui"
+            )
+            self.assertEqual(
+                default_output_root(
+                    frozen=True,
+                    executable=executable,
+                ),
+                Path(tmp).resolve() / "out",
+            )
 
 
 if __name__ == "__main__":
