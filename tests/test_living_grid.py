@@ -70,6 +70,16 @@ class TestLivingGrid(unittest.TestCase):
         self.assertEqual(grid.palette[1].game.kind, "extra")
         self.assertEqual(grid.palette[1].game.row, 2)
 
+    def test_infers_game_palette_target_from_known_rgb(self) -> None:
+        fixture = Path(__file__).resolve().parent / "fixtures" / "example_game.json"
+
+        grid = load_living_grid_json(fixture)
+
+        self.assertTrue(all(entry.game is not None for entry in grid.palette))
+        self.assertEqual((grid.palette[0].game.kind, grid.palette[0].game.row), ("grid", 2))
+        self.assertEqual(grid.palette[0].game.col, 1)
+        self.assertEqual((grid.palette[-1].game.kind, grid.palette[-1].game.row), ("extra", 7))
+
 
 def _write_fixture(overrides: dict[str, object] | None = None) -> Path:
     data = {

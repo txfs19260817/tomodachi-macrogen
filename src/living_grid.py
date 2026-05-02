@@ -5,6 +5,8 @@ from typing import Any
 
 from PIL import Image
 
+from .game_palette import find_game_palette_target
+
 
 @dataclass(frozen=True)
 class PressCounts:
@@ -124,12 +126,20 @@ def _parse_palette_entry(
         hex=str(entry.get("hex", "")),
         rgb=(int(rgb[0]), int(rgb[1]), int(rgb[2])),
         press=press_counts,
-        game=_parse_game_palette_target(entry, color_index),
+        game=_parse_game_palette_target(
+            entry,
+            color_index,
+            (int(rgb[0]), int(rgb[1]), int(rgb[2])),
+        ),
         pixel_count=pixel_count,
     )
 
 
-def _parse_game_palette_target(entry: dict[str, Any], color_index: int) -> GamePaletteTarget | None:
+def _parse_game_palette_target(
+    entry: dict[str, Any],
+    color_index: int,
+    rgb: tuple[int, int, int],
+) -> GamePaletteTarget | None:
     raw = entry.get("game")
     if isinstance(raw, dict):
         if "extra" in raw:
@@ -151,6 +161,11 @@ def _parse_game_palette_target(entry: dict[str, Any], color_index: int) -> GameP
         extra_match = re.fullmatch(r"\s*(?:E|Extra)\s*(\d+)\s*", label, re.I)
         if extra_match:
             return GamePaletteTarget(kind="extra", row=int(extra_match.group(1)))
+
+    inferred = find_game_palette_target(str(entry.get("hex", "")), rgb)
+    if inferred is not None:
+        kind, row, col = inferred
+        return GamePaletteTarget(kind=kind, row=row, col=col)
 
     return None
 
