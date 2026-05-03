@@ -7,7 +7,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -43,10 +43,19 @@ jobs:
           sudo apt-get install -y libegl1 libxcb-cursor0 libxcb-xinerama0 libxkbcommon-x11-0
 
       - name: Install dependencies
-        run: uv sync --locked --group build
+        run: uv sync --locked --group build --group test
 
       - name: Run tests
-        run: uv run python -m unittest discover -s tests
+        run: uv run pytest -n auto tests
+
+      - name: Validate version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            uv run python scripts/check_version.py --tag "${{ github.ref_name }}"
+          } else {
+            uv run python scripts/check_version.py
+          }
 
       - name: Build PyQt6 GUI
         run: uv run --group build python scripts/build_gui.py
@@ -71,3 +80,34 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: artifacts/*
           if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download portable artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          files=(release-assets/*)
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "${files[@]}" --clobber
+          else
+            gh release create "$TAG_NAME" "${files[@]}" \
+              --title "$TAG_NAME" \
+              --notes "Portable GUI builds for $TAG_NAME." \
+              --verify-tag
+          fi
