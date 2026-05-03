@@ -59,6 +59,8 @@ class ColorPicker:
         self.writer.wait(int(self.timing.get("menu_open_frames", 8)))
         self.writer.tap("Y")
         self.writer.wait(int(self.timing.get("screen_settle_frames", 4)))
+        self.writer.tap("L1")
+        self.writer.wait(int(self.timing.get("screen_settle_frames", 4)))
         self.navigate_game_palette_target(target)
         self.writer.tap("A")
         self.writer.wait(int(self.timing.get("screen_settle_frames", 4)))

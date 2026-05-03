@@ -31,7 +31,7 @@ When drawing files are provided in the same command, it waits 4 seconds after pa
 3. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
 4. Do not manually change the selected palette swatch, especially when running `color_*.txt`.
 
-If every used JSON color includes default 84-color Game Palette coordinates, the macro stays on the Game Palette and selects colors by coordinates. Otherwise it opens the HSB picker, resets Hue and the color pad, then sets each color. Each `color_*.txt` starts with a hard canvas reset and does not actively return at the end.
+If every used JSON color includes default 84-color Game Palette coordinates, the macro enters the 84-color Game Palette with `Y Y L1` and selects colors by coordinates. Otherwise it opens the HSB picker, resets Hue and the color pad, then sets each color. Each `color_*.txt` starts with a hard canvas reset and does not actively return at the end.
 
 ## Run Files
 

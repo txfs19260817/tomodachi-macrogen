@@ -30,7 +30,7 @@ uv run tomodachi-macrogen input.json --port COM5 --split-by-color
 3. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
 4. 不要手动切换当前色板格，特别是运行 `color_*.txt` 时。
 
-如果 JSON 里所有用到的颜色都有默认 84 色盘坐标，宏会留在 Game Palette 按坐标选色。否则宏会打开 HSB 选色器、复位 Hue 和颜色方块，再设置颜色。`color_*.txt` 开头会硬复位到画布左上，不在结尾主动回归。
+如果 JSON 里所有用到的颜色都有默认 84 色盘坐标，宏会用 `Y Y L1` 进入 84 色 Game Palette 并按坐标选色。否则宏会打开 HSB 选色器、复位 Hue 和颜色方块，再设置颜色。`color_*.txt` 开头会硬复位到画布左上，不在结尾主动回归。
 
 ## 运行文件
 

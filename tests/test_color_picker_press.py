@@ -209,7 +209,7 @@ class TestColorPickerPress(unittest.TestCase):
         hue_index = lines.index("{R2} 1")
         self.assertLess(reset_index, hue_index)
 
-    def test_current_slot_game_palette_uses_default_palette_without_r_tab(self) -> None:
+    def test_current_slot_game_palette_opens_84_color_tab_without_hsb_tab(self) -> None:
         config = {
             "game_palette_cols": 11,
             "timing": {
@@ -231,7 +231,9 @@ class TestColorPickerPress(unittest.TestCase):
 
         lines = [line.text for line in writer.lines]
         self.assertNotIn("{R1} 1", lines)
+        self.assertIn("{L1} 1", lines)
         self.assertIn("{L U} 3", lines)
+        self.assertLess(lines.index("{L1} 1"), lines.index("{L U} 3"))
         self.assertEqual(lines.count("{R} 1"), 2)
         self.assertEqual(lines.count("{D} 1"), 1)
 
@@ -256,6 +258,7 @@ class TestColorPickerPress(unittest.TestCase):
         picker.set_current_palette_slot_game(GamePaletteTarget(kind="extra", row=2))
 
         lines = [line.text for line in writer.lines]
+        self.assertIn("{L1} 1", lines)
         self.assertEqual(lines.count("{R} 1"), 11)
         self.assertEqual(lines.count("{D} 1"), 1)
 

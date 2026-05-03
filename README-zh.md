@@ -149,7 +149,7 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 3. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
 4. 运行宏前不要手动改变当前色板格，特别是 `--split-by-color`。
 
-生成的宏会把一个 Living the Grid cell 当作一个笔刷 stamp，移动距离按 `brush.px` 放大。如果每个用到的颜色都带 `game: {row, col}`、`game: {extra}` 或 `R1·C1` 这类 label，宏会留在默认 84 色盘里选色。否则会打开 H/S/B 选色器，并按 JSON 里的 `press.h/s/b` 调色。`color_*.txt` 会在开头硬复位到画布左上：左上推摇杆 7 秒，再向右 192、向下 77。
+生成的宏会把一个 Living the Grid cell 当作一个笔刷 stamp，移动距离按 `brush.px` 放大。如果每个用到的颜色都带 `game: {row, col}`、`game: {extra}` 或 `R1·C1` 这类 label，宏会用 `Y Y L1` 打开当前色格的 84 色 Game Palette，再按坐标选色。否则会打开 H/S/B 选色器，并按 JSON 里的 `press.h/s/b` 调色。`color_*.txt` 会在开头硬复位到画布左上：左上推摇杆 7 秒，再向右 192、向下 77。
 
 ## 配置
 

@@ -68,7 +68,7 @@ class TestSplitByColor(unittest.TestCase):
             expected_path = plan_color_pixels(grid.indices, color.color_index, start=(0, 0))
             self.assertEqual(writer.canvas_position(), expected_path[-1])
 
-    def test_game_palette_coordinates_select_game_mode_without_hsb_tab(self) -> None:
+    def test_game_palette_coordinates_select_84_color_tab_without_hsb_tab(self) -> None:
         payload = {
             "source": "living-the-grid.com",
             "version": 2,
@@ -100,6 +100,7 @@ class TestSplitByColor(unittest.TestCase):
             self.assertEqual(manifest["canvas_cell_step"], 3)
             self.assertEqual(manifest["palette_source"], "game")
             self.assertNotIn("{R1}", part)
+            self.assertIn("{L1}", part)
             self.assertIn("{L U}", part)
             self.assertEqual(part.count("{A R}"), 3)
 
@@ -133,6 +134,7 @@ class TestSplitByColor(unittest.TestCase):
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["palette_source"], "game")
             self.assertNotIn("{R1}", part)
+            self.assertIn("{L1}", part)
             self.assertIn("{L U}", part)
 
     def test_unknown_palette_rgb_uses_full_color_picker(self) -> None:
