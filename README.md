@@ -6,20 +6,27 @@ This project no longer accepts image input. Living the Grid handles quantization
 
 中文文档见 [README-zh.md](README-zh.md)。
 
-## Workflow
+## Download
+
+Portable GUI builds are published on the
+[GitHub Releases page](https://github.com/txfs19260817/tomodachi-macrogen/releases).
+Download the latest asset for your platform, extract it, then run:
+
+- Windows: `tomodachi-gui/tomodachi-gui.exe`
+- macOS: `tomodachi-gui.app`
+- Linux: `tomodachi-gui/tomodachi-gui`
+
+No installer is produced. The artifacts are unsigned, so Windows/macOS may show the
+usual first-run warning.
+
+## GUI Workflow
 
 1. Upload an image to Living the Grid.
 2. Select `square`, `smooth`, one of `1px / 3px / 7px / 13px / 19px / 27px`, and the `game` palette.
 3. Set `max colours`, for example `12`.
 4. Export `JSON (per-pixel data)`.
-5. Run this tool to generate SwiCC macros.
-6. If `--port` is provided, the same command pairs the controller and sends the drawing.
-
-```bash
-uv run tomodachi-macrogen input.json --port COM5 --split-by-color
-```
-
-Output always goes to `out/<input-name>-<timestamp>/`.
+5. Open `tomodachi-gui`, choose the JSON, and generate macros.
+6. Pick the serial port, pair the controller if needed, then start drawing.
 
 ## Install
 
@@ -36,12 +43,44 @@ uv run ruff check .
 uv run pytest -n auto tests
 ```
 
-## Common Commands
+## Build Portable GUI Locally
 
 ```bash
-# Open the native GUI
-uv run tomodachi-gui
+uv sync --group build
+uv run --group build python scripts/build_gui.py
+```
 
+Build output goes to `dist/tomodachi-gui/` on Windows/Linux and
+`dist/tomodachi-gui.app` on macOS.
+
+GitHub Actions workflow `.github/workflows/python-app.yml` builds portable native GUI
+archives on Windows, macOS, and Linux with PyInstaller onedir. Run it manually from
+Actions, or push a semantic-version tag such as `v1.0.1`.
+
+Tag releases are the version hook: the workflow validates that `vX.Y.Z` matches
+`pyproject.toml`'s project version, then publishes the portable archives as GitHub
+Release assets.
+
+## Native GUI
+
+Run `uv run tomodachi-gui` from source, or use the Release build. The GUI provides the
+same workflow as the CLI: choose a Living the Grid JSON, generate output, pair the
+controller, then send the generated files while showing progress. It renders the JSON
+preview, supports Chinese/English plus light/dark themes, and keeps serial work in a
+background thread.
+
+## CLI
+
+`tomodachi-macrogen` is the main command. With an input JSON and `--port`, it writes a
+timestamped output directory, sends the controller pairing macro, waits 4 seconds, then
+sends the generated drawing macros using SwiCC `+Q` encoding and `+GQF` queue polling.
+
+Without `--port`, it only generates files. With `--match-controller` and no input, it only
+sends the pairing macro.
+
+Common commands:
+
+```bash
 # List serial ports
 uv run tomodachi-macrogen --list-ports
 
@@ -58,42 +97,7 @@ uv run tomodachi-macrogen input.json --split-by-color
 uv run tomodachi-macrogen --clean-output --clean-cache
 ```
 
-## Build Portable GUI Artifacts
-
-GitHub Actions workflow `.github/workflows/python-app.yml` builds portable native GUI
-archives on Windows, macOS, and Linux with PyInstaller onedir. Run it manually from
-Actions, or push a semantic-version tag such as `v1.0.0`.
-
-Tag releases are the version hook: the workflow validates that `vX.Y.Z` matches
-`pyproject.toml`'s project version, then publishes the portable archives as GitHub
-Release assets.
-
-No installer is produced. Download the artifact, extract it, then run:
-
-- Windows: `tomodachi-gui/tomodachi-gui.exe`
-- macOS: `tomodachi-gui.app`
-- Linux: `tomodachi-gui/tomodachi-gui`
-
-The artifacts are unsigned, so Windows/macOS may show the usual first-run warning.
-
-## Unified CLI
-
-`tomodachi-macrogen` is the main command. With an input JSON and `--port`, it writes a
-timestamped output directory, sends the controller pairing macro, waits 4 seconds, then
-sends the generated drawing macros using SwiCC `+Q` encoding and `+GQF` queue polling.
-
-Without `--port`, it only generates files. With `--match-controller` and no input, it only
-sends the pairing macro.
-
-## Native GUI
-
-Run `uv run tomodachi-gui` to open the PyQt6 GUI. It provides the same workflow as the
-CLI: choose a Living the Grid JSON, generate output, pair the controller, then send the
-generated files while showing progress. The GUI renders the JSON preview, supports
-Chinese/English plus light/dark themes, and keeps serial work in a background thread; it
-does not load long macro text into a text box.
-
-## CLI
+Output always goes to `out/<input-name>-<timestamp>/`.
 
 - `input`: Living the Grid JSON.
 - `--port COM5`: generate, pair, and draw through the selected serial port.

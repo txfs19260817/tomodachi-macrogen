@@ -1,6 +1,6 @@
 [project]
 name = "tomodachi-macrogen"
-version = "1.0.0"
+version = "1.0.1"
 description = "Generate SwiCC macro scripts for Tomodachi Life face paint automation."
 readme = "README.md"
 requires-python = ">=3.13"

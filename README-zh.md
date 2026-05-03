@@ -6,20 +6,26 @@
 
 English documentation: [README.md](README.md).
 
-## 流程
+## 下载
+
+免安装 GUI 包发布在
+[GitHub Releases 页面](https://github.com/txfs19260817/tomodachi-macrogen/releases)。
+下载对应平台的最新 asset，解压后直接运行：
+
+- Windows：`tomodachi-gui/tomodachi-gui.exe`
+- macOS：`tomodachi-gui.app`
+- Linux：`tomodachi-gui/tomodachi-gui`
+
+不会生成安装器。产物未签名，Windows/macOS 首次运行时可能会有系统提示。
+
+## GUI 流程
 
 1. 在 Living the Grid 上传图片。
 2. 选择 `square`、`smooth`、`1px / 3px / 7px / 13px / 19px / 27px` 之一、`game` palette。
 3. 设置 `max colours`，例如 `12`。
 4. 导出 `JSON (per-pixel data)`。
-5. 运行本工具生成 SwiCC 宏。
-6. 如果提供 `--port`，同一条命令会匹配手柄并发送绘图。
-
-```bash
-uv run tomodachi-macrogen input.json --port COM5 --split-by-color
-```
-
-输出固定写入 `out/<JSON 文件名>-<时间戳>/`。
+5. 打开 `tomodachi-gui`，选择 JSON，生成宏。
+6. 选择串口，需要时先匹配手柄，然后开始绘画。
 
 ## 安装
 
@@ -36,12 +42,41 @@ uv run ruff check .
 uv run pytest -n auto tests
 ```
 
-## 常用命令
+## 本地构建 Portable GUI
 
 ```bash
-# 打开原生 GUI
-uv run tomodachi-gui
+uv sync --group build
+uv run --group build python scripts/build_gui.py
+```
 
+构建结果在 Windows/Linux 上写到 `dist/tomodachi-gui/`，在 macOS 上写到
+`dist/tomodachi-gui.app`。
+
+GitHub Actions 工作流 `.github/workflows/python-app.yml` 会用 PyInstaller onedir
+分别在 Windows、macOS、Linux 上构建免安装 GUI 压缩包。可以在 Actions 页面手动运行，
+也可以推送 `v1.0.1` 这类语义化版本 tag 触发。
+
+tag 发布就是版本 hook：workflow 会检查 `vX.Y.Z` 是否和 `pyproject.toml` 里的
+项目版本一致，然后把 portable 压缩包发布成 GitHub Release assets。
+
+## 原生 GUI
+
+源码运行用 `uv run tomodachi-gui`，普通使用建议下载 Release 包。GUI 把 CLI 的流程
+放到一个窗口里：选择 Living the Grid JSON、生成输出、匹配手柄、发送绘图并显示进度。
+GUI 会渲染 JSON 预览图，支持中文/英文和亮色/暗色主题，串口发送在后台线程执行。
+
+## CLI
+
+`tomodachi-macrogen` 是主命令。提供 JSON 和 `--port` 时，它会写入带时间戳的
+输出目录，发送匹配手柄宏，等待 4 秒，然后用 SwiCC `+Q` 编码和 `+GQF` 队列轮询
+发送绘图宏。
+
+不提供 `--port` 时只生成文件。不提供 JSON 且使用 `--match-controller` 时，只发送
+匹配手柄宏。
+
+常用命令：
+
+```bash
 # 查看串口
 uv run tomodachi-macrogen --list-ports
 
@@ -58,39 +93,7 @@ uv run tomodachi-macrogen input.json --split-by-color
 uv run tomodachi-macrogen --clean-output --clean-cache
 ```
 
-## 构建 Portable GUI 包
-
-GitHub Actions 工作流 `.github/workflows/python-app.yml` 会用 PyInstaller onedir
-分别在 Windows、macOS、Linux 上构建免安装 GUI 压缩包。可以在 Actions 页面手动运行，
-也可以推送 `v1.0.0` 这类语义化版本 tag 触发。
-
-tag 发布就是版本 hook：workflow 会检查 `vX.Y.Z` 是否和 `pyproject.toml` 里的
-项目版本一致，然后把 portable 压缩包发布成 GitHub Release assets。
-
-不会生成安装器。下载 artifact 后解压，然后直接运行：
-
-- Windows：`tomodachi-gui/tomodachi-gui.exe`
-- macOS：`tomodachi-gui.app`
-- Linux：`tomodachi-gui/tomodachi-gui`
-
-产物未签名，Windows/macOS 首次运行时可能会有系统提示。
-
-## 统一 CLI
-
-`tomodachi-macrogen` 是主命令。提供 JSON 和 `--port` 时，它会写入带时间戳的
-输出目录，发送匹配手柄宏，等待 4 秒，然后用 SwiCC `+Q` 编码和 `+GQF` 队列轮询
-发送绘图宏。
-
-不提供 `--port` 时只生成文件。不提供 JSON 且使用 `--match-controller` 时，只发送
-匹配手柄宏。
-
-## 原生 GUI
-
-运行 `uv run tomodachi-gui` 打开 PyQt6 GUI。它把 CLI 的流程放到一个窗口里：
-选择 Living the Grid JSON、生成输出、匹配手柄、发送绘图并显示进度。GUI 会渲染
-JSON 预览图，支持中文/英文和亮色/暗色主题，串口发送在后台线程执行，不会把长宏文本塞进文本框。
-
-## CLI
+输出固定写入 `out/<JSON 文件名>-<时间戳>/`。
 
 - `input`：Living the Grid JSON。
 - `--port COM5`：通过指定串口生成、匹配手柄并绘画。
