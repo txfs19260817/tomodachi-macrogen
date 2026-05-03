@@ -52,13 +52,13 @@ jobs:
         shell: pwsh
         run: |
           if ("${{ github.ref_type }}" -eq "tag") {
-            uv run python scripts/check_version.py --tag "${{ github.ref_name }}"
+            uv run tomodachi-check-version --tag "${{ github.ref_name }}"
           } else {
-            uv run python scripts/check_version.py
+            uv run tomodachi-check-version
           }
 
       - name: Build PyQt6 GUI
-        run: uv run --group build python scripts/build_gui.py
+        run: uv run --group build tomodachi-build-gui
 
       - name: Package artifact
         shell: pwsh
