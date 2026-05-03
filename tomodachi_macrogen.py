@@ -139,6 +139,31 @@ def main() -> int:
     return 0
 
 
+def clean_main() -> int:
+    parser = argparse.ArgumentParser(description="Clean generated outputs and local caches.")
+    parser.add_argument(
+        "--output",
+        action="store_true",
+        help="Clean generated output directories under out/.",
+    )
+    parser.add_argument(
+        "--cache",
+        action="store_true",
+        help="Clean local Python/tool caches.",
+    )
+    args = parser.parse_args()
+
+    clean_outputs = args.output or not args.cache
+    clean_caches = args.cache or not args.output
+    if clean_outputs:
+        clean_output()
+        print(f"Cleaned output directory: {default_output_root()}")
+    if clean_caches:
+        clean_cache()
+        print("Cleaned local Python/tool caches")
+    return 0
+
+
 def generate_macros(
     input_file: str | Path,
     options: GenerationOptions | None = None,

@@ -30,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
-    root = Path(__file__).resolve().parent.parent
+    root = Path(__file__).resolve().parent
     version = project_version(root / "pyproject.toml")
 
     if not SEMVER_PATTERN.fullmatch(version):

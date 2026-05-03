@@ -47,13 +47,13 @@ uv run pytest -n auto tests
 
 ```bash
 uv sync --group build
-uv run --group build python scripts/build_gui.py
+uv run --group build tomodachi-build-gui
 ```
 
 Build output goes to `dist/tomodachi-gui/` on Windows/Linux and
-`dist/tomodachi-gui.app` on macOS. The build script removes PyInstaller intermediates
-by default; pass `--keep-build` if you need `build/` and `tomodachi-gui.spec` for
-debugging.
+`dist/tomodachi-gui.app` on macOS. `tomodachi-build-gui` removes PyInstaller
+intermediates by default; pass `--keep-build` if you need `build/` and
+`tomodachi-gui.spec` for debugging.
 
 GitHub Actions workflow `.github/workflows/python-app.yml` builds portable native GUI
 archives on Windows, macOS, and Linux with PyInstaller onedir. Run it manually from
@@ -96,7 +96,7 @@ uv run tomodachi-macrogen --port COM5 --match-controller
 uv run tomodachi-macrogen input.json --split-by-color
 
 # Clean generated outputs and caches
-uv run tomodachi-macrogen --clean-output --clean-cache
+uv run tomodachi-clean
 ```
 
 Output always goes to `out/<input-name>-<timestamp>/`.
@@ -112,6 +112,9 @@ Output always goes to `out/<input-name>-<timestamp>/`.
 - `--split-by-color`: one file per color, useful for rerunning a single color.
 - `--clean-output`: delete generated outputs under `out/`.
 - `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
+
+For cleanup only, use `uv run tomodachi-clean`. Pass `--output` or `--cache` to limit
+cleanup to one target.
 
 The drawing path is fixed to same-color horizontal run planning. Path mode flags were removed.
 

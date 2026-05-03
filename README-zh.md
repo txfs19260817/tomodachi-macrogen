@@ -46,12 +46,12 @@ uv run pytest -n auto tests
 
 ```bash
 uv sync --group build
-uv run --group build python scripts/build_gui.py
+uv run --group build tomodachi-build-gui
 ```
 
 构建结果在 Windows/Linux 上写到 `dist/tomodachi-gui/`，在 macOS 上写到
-`dist/tomodachi-gui.app`。构建脚本默认会删除 PyInstaller 中间产物；如果需要保留
-`build/` 和 `tomodachi-gui.spec` 排查问题，传入 `--keep-build`。
+`dist/tomodachi-gui.app`。`tomodachi-build-gui` 默认会删除 PyInstaller 中间产物；
+如果需要保留 `build/` 和 `tomodachi-gui.spec` 排查问题，传入 `--keep-build`。
 
 GitHub Actions 工作流 `.github/workflows/python-app.yml` 会用 PyInstaller onedir
 分别在 Windows、macOS、Linux 上构建免安装 GUI 压缩包。可以在 Actions 页面手动运行，
@@ -91,7 +91,7 @@ uv run tomodachi-macrogen --port COM5 --match-controller
 uv run tomodachi-macrogen input.json --split-by-color
 
 # 清理输出和缓存
-uv run tomodachi-macrogen --clean-output --clean-cache
+uv run tomodachi-clean
 ```
 
 输出固定写入 `out/<JSON 文件名>-<时间戳>/`。
@@ -107,6 +107,8 @@ uv run tomodachi-macrogen --clean-output --clean-cache
 - `--split-by-color`：一个颜色一个文件，方便单独重跑某个颜色。
 - `--clean-output`：删除 `out/` 下的生成结果。
 - `--clean-cache`：删除 `.ruff_cache`、`__pycache__` 等缓存。
+
+只清理时可以用 `uv run tomodachi-clean`。传 `--output` 或 `--cache` 可以只清理其中一类。
 
 绘图路径固定为同色水平连续段规划，不再暴露路径模式 flag。
 

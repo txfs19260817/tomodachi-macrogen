@@ -3,9 +3,7 @@ import os
 import shutil
 from pathlib import Path
 
-import PyInstaller.__main__
-
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parent
 DATA_FILES = (
     "config.default.json",
     "README_RUN.template.md",
@@ -32,6 +30,9 @@ def clean_intermediates() -> None:
 
 def main() -> int:
     args_namespace = build_parser().parse_args()
+
+    import PyInstaller.__main__
+
     args = [
         "--noconfirm",
         "--clean",
