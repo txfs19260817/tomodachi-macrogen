@@ -50,7 +50,8 @@ uv run --group build python scripts/build_gui.py
 ```
 
 构建结果在 Windows/Linux 上写到 `dist/tomodachi-gui/`，在 macOS 上写到
-`dist/tomodachi-gui.app`。
+`dist/tomodachi-gui.app`。构建脚本默认会删除 PyInstaller 中间产物；如果需要保留
+`build/` 和 `tomodachi-gui.spec` 排查问题，传入 `--keep-build`。
 
 GitHub Actions 工作流 `.github/workflows/python-app.yml` 会用 PyInstaller onedir
 分别在 Windows、macOS、Linux 上构建免安装 GUI 压缩包。可以在 Actions 页面手动运行，

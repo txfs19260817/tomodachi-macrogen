@@ -51,7 +51,9 @@ uv run --group build python scripts/build_gui.py
 ```
 
 Build output goes to `dist/tomodachi-gui/` on Windows/Linux and
-`dist/tomodachi-gui.app` on macOS.
+`dist/tomodachi-gui.app` on macOS. The build script removes PyInstaller intermediates
+by default; pass `--keep-build` if you need `build/` and `tomodachi-gui.spec` for
+debugging.
 
 GitHub Actions workflow `.github/workflows/python-app.yml` builds portable native GUI
 archives on Windows, macOS, and Linux with PyInstaller onedir. Run it manually from
