@@ -1,45 +1,118 @@
-[project]
-name = "tomodachi-macrogen"
-version = "1.0.1"
-description = "Generate SwiCC macro scripts for Tomodachi Life face paint automation."
-readme = "README.md"
-requires-python = ">=3.13"
-dependencies = [
-  "Pillow>=10.0",
-  "PyQt6>=6.7",
-  "pyserial>=3.5",
-  "python-i18n>=0.3.9",
-  "tqdm>=4.67",
-]
+name: Build GUI
 
-[project.scripts]
-tomodachi-macrogen = "tomodachi_macrogen:main"
-tomodachi-gui = "tomodachi_gui:main"
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
-[dependency-groups]
-build = [
-  "pyinstaller>=6.20",
-]
-dev = [
-  "pyupgrade>=3.20.0",
-  "ruff>=0.11.0",
-]
-test = [
-  "pytest>=8.3",
-  "pytest-xdist>=3.6",
-]
+permissions:
+  contents: write
 
-[build-system]
-requires = ["setuptools>=68.0"]
-build-backend = "setuptools.build_meta"
+jobs:
+  build:
+    name: Build ${{ matrix.artifact_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2025
+            artifact_name: tomodachi-gui-windows-x64-portable
+          - os: macos-15
+            artifact_name: tomodachi-gui-macos-arm64-portable
+          - os: ubuntu-24.04
+            artifact_name: tomodachi-gui-linux-x64-portable
 
-[tool.setuptools]
-py-modules = ["tomodachi_macrogen", "tomodachi_gui", "swicc_runner"]
-packages = ["src"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
-[tool.ruff]
-target-version = "py313"
-line-length = 100
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+      - name: Install Python
+        run: uv python install 3.13
+
+      - name: Install Linux Qt runtime libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libxcb-cursor0 libxcb-xinerama0 libxkbcommon-x11-0
+
+      - name: Install dependencies
+        run: uv sync --locked --group build --group test
+
+      - name: Run tests
+        run: uv run pytest -n auto tests
+
+      - name: Validate version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            uv run tomodachi-check-version --tag "${{ github.ref_name }}"
+          } else {
+            uv run tomodachi-check-version
+          }
+
+      - name: Build PyQt6 GUI
+        run: uv run --group build tomodachi-build-gui
+
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $name = "${{ matrix.artifact_name }}"
+
+          if ($env:RUNNER_OS -eq "Windows") {
+            Compress-Archive -Path "dist/tomodachi-gui" -DestinationPath "artifacts/$name.zip"
+          } elseif ($env:RUNNER_OS -eq "macOS") {
+            tar -czf "artifacts/$name.tar.gz" -C dist "tomodachi-gui.app"
+          } else {
+            tar -czf "artifacts/$name.tar.gz" -C dist "tomodachi-gui"
+          }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download portable artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          files=(release-assets/*)
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "${files[@]}" --clobber
+          else
+            gh release create "$TAG_NAME" "${files[@]}" \
+              --title "$TAG_NAME" \
+              --notes "Portable GUI builds for $TAG_NAME." \
+              --verify-tag
+          fi
