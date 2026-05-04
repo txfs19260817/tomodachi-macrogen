@@ -14,6 +14,7 @@ class TestGuiI18n(unittest.TestCase):
         self.assertEqual(tr("generate.button"), "Generate")
         self.assertEqual(tr("generate.open_living_grid"), "Open Living the Grid")
         self.assertEqual(tr("draw.open_readme"), "Read Run Instructions")
+        self.assertEqual(tr("dialog.close"), "Close")
         self.assertEqual(tr("draw.cancel"), "Cancel")
 
     def test_gui_translation_formats_preview_meta(self) -> None:

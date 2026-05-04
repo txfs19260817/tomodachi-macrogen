@@ -150,9 +150,10 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 ## 游戏内准备
 
 1. 进入 face paint 绘制界面。
-2. 选择与 Living the Grid JSON 一致的方形 smooth 笔刷大小。
-3. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
-4. 运行宏前不要手动改变当前色板格，特别是 `--split-by-color`。
+2. 把游戏内画笔重置为 1px。
+3. 如果使用 84 色模式，确认 84 色板起点是左下角黑色（R7C1）。如果使用全色 / HSB 模式，只需要完成 1px 画笔重置。
+4. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
+5. 运行宏前不要手动改变当前色板格，特别是 `--split-by-color`。
 
 生成的宏会把一个 Living the Grid cell 当作一个笔刷 stamp，移动距离按 `brush.px` 放大。如果每个用到的颜色都带 `game: {row, col}`、`game: {extra}` 或 `R1·C1` 这类 label，宏会用 `Y Y L1` 打开当前色格的 84 色 Game Palette，并从左下角黑色或上一次选中的 84 色位置相对移动。否则会打开 H/S/B 选色器，并按 JSON 里的 `press.h/s/b` 调色。`color_*.txt` 会在开头硬复位到画布左上：左上推摇杆 7 秒，再向右 192、向下 77。
 

@@ -13,6 +13,28 @@ from swicc_runner import TransferProgress, import_serial_tools
 from tomodachi_macrogen import GenerationResult
 
 LIVING_THE_GRID_URL = "https://living-the-grid.com/"
+SWATCH_SIZE = 14
+
+
+def build_part_color_map(manifest: dict[str, object]) -> dict[str, str]:
+    colors: dict[str, str] = {}
+    raw_parts = manifest.get("parts", [])
+    if not isinstance(raw_parts, list):
+        return colors
+    for raw_part in raw_parts:
+        if not isinstance(raw_part, dict):
+            continue
+        file_name = raw_part.get("file")
+        hex_color = raw_part.get("hex")
+        if isinstance(file_name, str) and is_hex_color(hex_color):
+            colors[Path(file_name).name] = hex_color.upper()
+    return colors
+
+
+def is_hex_color(value: object) -> bool:
+    if not isinstance(value, str) or len(value) != 7 or not value.startswith("#"):
+        return False
+    return all(character in "0123456789abcdefABCDEF" for character in value[1:])
 
 
 def main() -> int:
@@ -23,6 +45,7 @@ def main() -> int:
             QApplication,
             QCheckBox,
             QComboBox,
+            QDialog,
             QFileDialog,
             QFrame,
             QGridLayout,
@@ -59,9 +82,10 @@ def main() -> int:
             self.status_kwargs: dict[str, object] = {}
             self.current_theme = "light"
             self.link_color = "#21666c"
+            self.current_file_colors: dict[str, str] = {}
             self.threads: list[QThread] = []
             self.workers: list[QObject] = []
-            self.readme_windows: list[QTextBrowser] = []
+            self.readme_windows: list[QDialog] = []
 
             self.resize(1120, 740)
             self.setMinimumSize(960, 640)
@@ -173,8 +197,15 @@ def main() -> int:
 
             self.draw_group = QGroupBox()
             draw_layout = QVBoxLayout(self.draw_group)
+            current_file_row = QHBoxLayout()
+            current_file_row.setSpacing(8)
+            self.current_file_swatch = QLabel()
+            self.current_file_swatch.setFixedSize(SWATCH_SIZE, SWATCH_SIZE)
+            self.current_file_swatch.setVisible(False)
             self.current_file_label = QLabel()
             self.current_file_label.setObjectName("Muted")
+            current_file_row.addWidget(self.current_file_swatch)
+            current_file_row.addWidget(self.current_file_label, 1)
             self.file_list = QListWidget()
             self.file_list.setMinimumHeight(92)
             self.file_list.setMaximumHeight(150)
@@ -196,7 +227,7 @@ def main() -> int:
             button_row.addWidget(self.open_readme_button)
             button_row.addWidget(self.draw_button, 1)
             button_row.addWidget(self.cancel_draw_button)
-            draw_layout.addWidget(self.current_file_label)
+            draw_layout.addLayout(current_file_row)
             draw_layout.addWidget(self.file_list)
             draw_layout.addLayout(button_row)
             right_layout.addWidget(self.draw_group)
@@ -343,17 +374,29 @@ def main() -> int:
             except OSError:
                 self.show_error(tr("error.open_readme"))
                 return
-            browser = QTextBrowser(self)
-            browser.setWindowTitle(tr("draw.open_readme"))
+            dialog = QDialog(self)
+            dialog.setWindowTitle(tr("draw.open_readme"))
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+            layout = QVBoxLayout(dialog)
+            browser = QTextBrowser(dialog)
             browser.setOpenExternalLinks(True)
             browser.setSearchPaths([str(readme_path.parent)])
             browser.setHtml(html)
-            browser.resize(760, 680)
-            browser.destroyed.connect(
-                lambda _object=None, window=browser: self.cleanup_readme_window(window)
+            close_button = QPushButton(tr("dialog.close"), dialog)
+            close_button.clicked.connect(dialog.close)
+            close_row = QHBoxLayout()
+            close_row.addStretch(1)
+            close_row.addWidget(close_button)
+            layout.addWidget(browser)
+            layout.addLayout(close_row)
+            dialog.resize(760, 680)
+            dialog.destroyed.connect(
+                lambda _object=None, window=dialog: self.cleanup_readme_window(window)
             )
-            self.readme_windows.append(browser)
-            browser.show()
+            self.readme_windows.append(dialog)
+            dialog.show()
+            dialog.raise_()
+            dialog.activateWindow()
 
         def cleanup_readme_window(self, window: object) -> None:
             if window in self.readme_windows:
@@ -453,8 +496,10 @@ def main() -> int:
                 if not isinstance(result, GenerationResult):
                     raise TypeError(f"unexpected generation result: {type(result).__name__}")
                 self.result = result
+                self.current_file_colors = build_part_color_map(result.manifest)
                 self.file_list.clear()
                 self.current_file_label.setText(tr("draw.current_file"))
+                self.clear_current_file_swatch()
                 for path in self.result.macro_files:
                     self.file_list.addItem(str(path))
                 self.set_preview_from_file(self.result.preview_path)
@@ -583,7 +628,9 @@ def main() -> int:
         def update_current_file_label(self, payload: TransferProgress | None = None) -> None:
             if payload is None or payload.current_file_index is None or payload.total_files is None:
                 self.current_file_label.setText(tr("draw.current_file"))
+                self.clear_current_file_swatch()
                 return
+            self.update_current_file_swatch(payload.current_file)
             self.current_file_label.setText(
                 tr(
                     "draw.current_file_detail",
@@ -592,6 +639,25 @@ def main() -> int:
                     name=payload.current_file or "",
                 )
             )
+
+        def update_current_file_swatch(self, current_file: str | None) -> None:
+            if not current_file:
+                self.clear_current_file_swatch()
+                return
+            color = self.current_file_colors.get(Path(current_file).name)
+            if color is None:
+                self.clear_current_file_swatch()
+                return
+            self.current_file_swatch.setStyleSheet(
+                f"background: {color}; border: 1px solid #555; border-radius: 3px;"
+            )
+            self.current_file_swatch.setToolTip(color)
+            self.current_file_swatch.setVisible(True)
+
+        def clear_current_file_swatch(self) -> None:
+            self.current_file_swatch.clear()
+            self.current_file_swatch.setToolTip("")
+            self.current_file_swatch.setVisible(False)
 
         def start_worker(self, worker: QObject) -> QThread:
             thread = QThread(self)

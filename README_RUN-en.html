@@ -20,13 +20,14 @@
     <li>Flash board B with the UART bridge: <a href="https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2">https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2</a></li>
     <li>Wire A GPIO0/TX to B GPIO1/RX, A GPIO1/RX to B GPIO0/TX, and A GND to B GND. Do not connect 5V or 3V3.</li>
     <li>Enable Pro Controller Wired Communication in Switch system settings.</li>
-    <li>Open Tomodachi Life's face paint drawing screen and select the same square smooth brush size used by the Living the Grid JSON.</li>
+    <li>Open Tomodachi Life's face paint drawing screen and reset the brush to 1 px.</li>
     <li>In the GUI, choose the JSON, generate macros, select the serial port, then pair the controller or start drawing directly.</li>
   </ol>
 
   <h2>Every Later Run</h2>
   <ol>
-    <li>Open the same face paint drawing screen and confirm the brush size matches the current JSON.</li>
+    <li>Open the same face paint drawing screen and reset the brush to 1 px.</li>
+    <li>84-color mode also requires the 84-color palette start on the lower-left black swatch (R7C1); full-color / HSB mode only requires the brush to be 1 px.</li>
     <li>For normal <code>image_part*.txt</code> output, move the brush cursor to the top-left first pixel first; <code>color_*.txt</code> starts with an automatic hard reset.</li>
     <li>Do not manually change the selected palette swatch, especially when running <code>color_*.txt</code>.</li>
     <li>In the GUI, click Start Drawing, or send this folder's <code>image_part*.txt</code> / <code>color_*.txt</code> files in order.</li>

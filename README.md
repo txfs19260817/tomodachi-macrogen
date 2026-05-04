@@ -155,9 +155,10 @@ Enable Pro Controller Wired Communication in Switch system settings.
 ## In-Game Setup
 
 1. Open the face paint drawing screen.
-2. Select the same square smooth brush size shown in the Living the Grid JSON.
-3. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
-4. Do not manually change the selected palette swatch before running, especially with `--split-by-color`.
+2. Reset the in-game brush to 1 px.
+3. For 84-color mode, confirm the 84-color palette starts on the lower-left black swatch (R7C1). For full-color / HSB mode, the 1 px brush reset is the only color-picker prerequisite.
+4. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
+5. Do not manually change the selected palette swatch before running, especially with `--split-by-color`.
 
 The generated macro treats one Living the Grid cell as one brush stamp; movement is scaled by `brush.px`. If every used palette entry includes `game: {row, col}`, `game: {extra}`, or a label like `R1·C1`, the macro opens the current swatch with `Y Y L1`, then selects from the 84-color Game Palette by moving relative to the lower-left black swatch or the last selected 84-color position. Otherwise it opens the H/S/B picker and uses JSON `press.h/s/b` values. Each `color_*.txt` starts with a hard canvas reset: hold the stick upper-left for 7 seconds, then move right 192 and down 77.
 

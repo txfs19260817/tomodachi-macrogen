@@ -16,6 +16,12 @@ def test_run_readme_markdown_and_html_keep_user_sections() -> None:
     assert "<h2>First Use</h2>" in en_html
     assert "## Every Later Run" in en_md
     assert "<h2>Every Later Run</h2>" in en_html
+    assert "把画笔重置为 1px" in zh_md
+    assert "左下角黑色（R7C1）" in zh_md
+    assert "全色 / HSB 模式只需要画笔是 1px" in zh_md
+    assert "reset the brush to 1 px" in en_md
+    assert "lower-left black swatch (R7C1)" in en_md
+    assert "full-color / HSB mode only requires the brush to be 1 px" in en_md
 
 
 def test_bundled_data_files_include_all_run_readmes() -> None:
