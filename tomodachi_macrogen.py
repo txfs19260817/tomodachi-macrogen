@@ -4,7 +4,6 @@ import json
 import shutil
 import sys
 from collections.abc import Callable
-from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,22 +11,25 @@ from typing import Any
 
 from PIL import Image
 
-from src.color_picker import ColorPicker
+from src import resources
+from src.color_picker import ColorPicker, GamePalettePosition
+from src.config import AppConfig, ConfigInput, as_app_config, deep_merge
 from src.living_grid import LivingGridData, load_living_grid_json
 from src.macro_writer import MacroWriter
 from src.palette import BatchColor, PaletteColor, flatten_batches, make_batches, rgb_to_hsv
 from src.path_planner import plan_color_pixels
+from src.resources import RUN_README_OUTPUTS, SOURCE_ROOT
 from swicc_runner import (
     build_command_list,
     import_serial_tools,
     run_serial_transfer,
 )
 
-SOURCE_ROOT = Path(__file__).resolve().parent
-RESOURCE_ROOT = Path(getattr(sys, "_MEIPASS", SOURCE_ROOT))
-DEFAULT_CONFIG = RESOURCE_ROOT / "config.default.json"
-RUN_README_TEMPLATE = RESOURCE_ROOT / "README_RUN.template.md"
-RUN_README_EN_TEMPLATE = RESOURCE_ROOT / "README_RUN-en.template.md"
+DEFAULT_CONFIG = resources.DEFAULT_CONFIG
+RUN_README_TEMPLATE = resources.RUN_README_TEMPLATE
+RUN_README_EN_TEMPLATE = resources.RUN_README_EN_TEMPLATE
+RUN_README_HTML = resources.RUN_README_HTML
+RUN_README_EN_HTML = resources.RUN_README_EN_HTML
 
 
 @dataclass(frozen=True)
@@ -58,6 +60,17 @@ class GenerationResult:
     @property
     def total_frames(self) -> int:
         return int(self.manifest.get("total_frames", 0))
+
+
+@dataclass(frozen=True)
+class MacroOutput:
+    split_strategy: str
+    batch_count: int
+    batch_colors: list[BatchColor]
+    part_files: list[dict[str, Any]]
+    reconstructed: Image.Image
+    total_lines: int
+    total_frames: int
 
 
 @dataclass(frozen=True)
@@ -174,8 +187,7 @@ def generate_macros(
     if input_path.suffix.lower() != ".json":
         raise ValueError("only Living the Grid JSON input is supported")
 
-    config = load_config(options.config_path)
-    apply_generation_overrides(config, options)
+    config = apply_generation_overrides(load_config(options.config_path), options)
 
     out_dir = resolve_output_dir(
         input_path,
@@ -190,87 +202,132 @@ def generate_macros(
 
     report_generation_progress(progress_callback, "status.loading_json")
     grid = load_living_grid_json(input_path)
-    config.setdefault("canvas_cell_step", grid.brush_px)
-    colors = build_living_grid_colors(grid, str(config.get("color_order", "original-palette")))
-    batches = make_batches(colors, int(config.get("palette_slots", 9)))
+    if config.canvas_cell_step is None:
+        config = config.with_canvas_cell_step(grid.brush_px)
+    colors = build_living_grid_colors(grid, config.color_order)
+    batches = make_batches(colors, config.palette_slots)
     direct_palette = has_game_palette_coordinates(grid, colors)
     palette_source = "game" if direct_palette else "auto"
 
     report_generation_progress(progress_callback, "status.planning_macros")
     grid.preview.save(out_dir / "preview_quantized.png")
-    if options.split_by_color:
-        writers = generate_color_split_macros(config, grid, colors)
-        part_files = write_color_parts(out_dir, writers, grid)
-        reconstructed = reconstruct_color_split_image(grid, writers)
-        reconstructed.save(out_dir / "reconstructed_from_macro.png")
-        report_generation_progress(progress_callback, "status.writing_output")
-        write_palette_report(out_dir / "palette_report.csv", color_split_report(colors), grid)
-        manifest = write_common_outputs(
-            out_dir,
-            config,
-            canvas_size=(grid.width, grid.height),
-            manifest={
-                "mode": "living-grid",
-                "path_strategy": "nearest-runs",
-                "split_strategy": "color",
-                "input": str(input_path),
-                "input_source": grid.source,
-                "input_version": grid.version,
-                "brush": grid.brush,
-                "canvas": grid.canvas,
-                "canvas_cell_step": config.get("canvas_cell_step"),
-                "palette_source": palette_source,
-                "parts": part_files,
-                "preview": "preview_quantized.png",
-                "reconstructed": "reconstructed_from_macro.png",
-                "palette_report": "palette_report.csv",
-                "palette_color_count": len(colors),
-                "batch_count": 0,
-                "total_lines": sum(len(writer.lines) for _color, writer in writers),
-                "total_frames": sum(writer.total_frames() for _color, writer in writers),
-            },
-        )
-        return build_generation_result(input_path, out_dir, manifest)
+    macro_output = build_macro_output(
+        out_dir=out_dir,
+        config=config,
+        grid=grid,
+        colors=colors,
+        batches=batches,
+        direct_palette=direct_palette,
+        split_by_color=options.split_by_color,
+    )
+    macro_output.reconstructed.save(out_dir / "reconstructed_from_macro.png")
 
+    report_generation_progress(progress_callback, "status.writing_output")
+    write_palette_report(out_dir / "palette_report.csv", macro_output.batch_colors, grid)
+    manifest = write_common_outputs(
+        out_dir,
+        config,
+        canvas_size=(grid.width, grid.height),
+        manifest=build_manifest(
+            input_path=input_path,
+            grid=grid,
+            config=config,
+            palette_source=palette_source,
+            palette_color_count=len(colors),
+            macro_output=macro_output,
+        ),
+    )
+    return build_generation_result(input_path, out_dir, manifest)
+
+
+def build_macro_output(
+    *,
+    out_dir: Path,
+    config: AppConfig,
+    grid: LivingGridData,
+    colors: list[PaletteColor],
+    batches: list[list[BatchColor]],
+    direct_palette: bool,
+    split_by_color: bool,
+) -> MacroOutput:
+    if split_by_color:
+        return build_color_split_output(out_dir, config, grid, colors)
+    return build_line_split_output(out_dir, config, grid, colors, batches, direct_palette)
+
+
+def build_color_split_output(
+    out_dir: Path,
+    config: AppConfig,
+    grid: LivingGridData,
+    colors: list[PaletteColor],
+) -> MacroOutput:
+    writers = generate_color_split_macros(config, grid, colors)
+    part_files = write_color_parts(out_dir, writers, grid)
+    return MacroOutput(
+        split_strategy="color",
+        batch_count=0,
+        batch_colors=color_split_report(colors),
+        part_files=part_files,
+        reconstructed=reconstruct_color_split_image(grid, writers),
+        total_lines=sum(len(writer.lines) for _color, writer in writers),
+        total_frames=sum(writer.total_frames() for _color, writer in writers),
+    )
+
+
+def build_line_split_output(
+    out_dir: Path,
+    config: AppConfig,
+    grid: LivingGridData,
+    colors: list[PaletteColor],
+    batches: list[list[BatchColor]],
+    direct_palette: bool,
+) -> MacroOutput:
     writer = (
         generate_direct_palette_macro(config, grid, colors)
         if direct_palette
         else generate_living_grid_macro(config, grid, batches)
     )
-    parts = writer.split_output(config.get("split_lines"))
     batch_colors = color_split_report(colors) if direct_palette else flatten_batches(batches)
-    reconstructed = reconstruct_batched_image(grid, writer, batch_colors)
-    reconstructed.save(out_dir / "reconstructed_from_macro.png")
-
-    report_generation_progress(progress_callback, "status.writing_output")
-    write_palette_report(out_dir / "palette_report.csv", batch_colors, grid)
-    part_files = write_parts(out_dir, "image_part", parts)
-    manifest = write_common_outputs(
-        out_dir,
-        config,
-        canvas_size=(grid.width, grid.height),
-        manifest={
-            "mode": "living-grid",
-            "path_strategy": "nearest-runs",
-            "split_strategy": "lines",
-            "input": str(input_path),
-            "input_source": grid.source,
-            "input_version": grid.version,
-            "brush": grid.brush,
-            "canvas": grid.canvas,
-            "canvas_cell_step": config.get("canvas_cell_step"),
-            "palette_source": palette_source,
-            "parts": part_files,
-            "preview": "preview_quantized.png",
-            "reconstructed": "reconstructed_from_macro.png",
-            "palette_report": "palette_report.csv",
-            "palette_color_count": len(colors),
-            "batch_count": 0 if direct_palette else len(batches),
-            "total_lines": len(writer.lines),
-            "total_frames": writer.total_frames(),
-        },
+    return MacroOutput(
+        split_strategy="lines",
+        batch_count=0 if direct_palette else len(batches),
+        batch_colors=batch_colors,
+        part_files=write_parts(out_dir, "image_part", writer.split_output(config.split_lines)),
+        reconstructed=reconstruct_batched_image(grid, writer, batch_colors),
+        total_lines=len(writer.lines),
+        total_frames=writer.total_frames(),
     )
-    return build_generation_result(input_path, out_dir, manifest)
+
+
+def build_manifest(
+    *,
+    input_path: Path,
+    grid: LivingGridData,
+    config: AppConfig,
+    palette_source: str,
+    palette_color_count: int,
+    macro_output: MacroOutput,
+) -> dict[str, Any]:
+    return {
+        "mode": "living-grid",
+        "path_strategy": "nearest-runs",
+        "split_strategy": macro_output.split_strategy,
+        "input": str(input_path),
+        "input_source": grid.source,
+        "input_version": grid.version,
+        "brush": grid.brush,
+        "canvas": grid.canvas,
+        "canvas_cell_step": config.canvas_cell_step,
+        "palette_source": palette_source,
+        "parts": macro_output.part_files,
+        "preview": "preview_quantized.png",
+        "reconstructed": "reconstructed_from_macro.png",
+        "palette_report": "palette_report.csv",
+        "palette_color_count": palette_color_count,
+        "batch_count": macro_output.batch_count,
+        "total_lines": macro_output.total_lines,
+        "total_frames": macro_output.total_frames,
+    }
 
 
 def report_generation_progress(
@@ -386,34 +443,21 @@ def send_macro_files(
     )
 
 
-def load_config(config_path: str | Path | None) -> dict[str, Any]:
+def load_config(config_path: str | Path | None) -> AppConfig:
     with DEFAULT_CONFIG.open("r", encoding="utf-8") as file:
-        config = json.load(file)
+        config_data = json.load(file)
     if config_path:
         with Path(config_path).open("r", encoding="utf-8") as file:
-            config = deep_merge(config, json.load(file))
-    return config
+            config_data = deep_merge(config_data, json.load(file))
+    return AppConfig.from_mapping(config_data)
 
 
-def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
-    merged = deepcopy(base)
-    for key, value in override.items():
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
-            merged[key] = deep_merge(merged[key], value)
-        else:
-            merged[key] = value
-    return merged
-
-
-def apply_generation_overrides(config: dict[str, Any], options: GenerationOptions) -> None:
-    mapping = {
-        "palette_slots": options.palette_slots,
-        "color_order": options.color_order,
-        "split_lines": options.split_lines,
-    }
-    for key, value in mapping.items():
-        if value is not None:
-            config[key] = value
+def apply_generation_overrides(config: AppConfig, options: GenerationOptions) -> AppConfig:
+    return config.with_overrides(
+        palette_slots=options.palette_slots,
+        color_order=options.color_order,
+        split_lines=options.split_lines,
+    )
 
 
 def resolve_output_dir(
@@ -501,10 +545,11 @@ def build_living_grid_colors(grid: LivingGridData, order: str) -> list[PaletteCo
 
 
 def generate_living_grid_macro(
-    config: dict[str, Any],
+    config: ConfigInput,
     grid: LivingGridData,
     batches: list[list[BatchColor]],
 ) -> MacroWriter:
+    config = as_app_config(config)
     writer = MacroWriter(config)
     picker = ColorPicker(writer, config)
 
@@ -526,16 +571,17 @@ def generate_living_grid_macro(
 
 
 def generate_direct_palette_macro(
-    config: dict[str, Any],
+    config: ConfigInput,
     grid: LivingGridData,
     colors: list[PaletteColor],
 ) -> MacroWriter:
+    config = as_app_config(config)
     writer = MacroWriter(config)
     picker = ColorPicker(writer, config)
 
     for color in colors:
         palette_entry = grid.palette[color.color_index]
-        select_current_color(picker, config, palette_entry)
+        select_current_color(picker, palette_entry)
         pixels = plan_color_pixels(
             grid.indices,
             color.color_index,
@@ -547,18 +593,25 @@ def generate_direct_palette_macro(
 
 
 def generate_color_split_macros(
-    config: dict[str, Any],
+    config: ConfigInput,
     grid: LivingGridData,
     colors: list[PaletteColor],
 ) -> list[tuple[PaletteColor, MacroWriter]]:
+    config = as_app_config(config)
     writers: list[tuple[PaletteColor, MacroWriter]] = []
+    game_palette_position: GamePalettePosition | None = None
 
     for color in colors:
         writer = MacroWriter(config)
-        picker = ColorPicker(writer, config)
+        picker = ColorPicker(
+            writer,
+            config,
+            game_palette_position=game_palette_position,
+        )
         palette_entry = grid.palette[color.color_index]
 
-        select_current_color(picker, config, palette_entry)
+        select_current_color(picker, palette_entry)
+        game_palette_position = picker.game_palette_position
         writer.reset_canvas_to_origin()
         pixels = plan_color_pixels(
             grid.indices,
@@ -581,8 +634,7 @@ def has_game_palette_coordinates(
     )
 
 
-def select_current_color(picker: ColorPicker, config: dict[str, Any], palette_entry: Any) -> None:
-    del config
+def select_current_color(picker: ColorPicker, palette_entry: Any) -> None:
     if palette_entry.game is not None:
         picker.set_current_palette_slot_game(palette_entry.game)
         return
@@ -720,7 +772,7 @@ def write_palette_report(
 
 def write_common_outputs(
     out_dir: Path,
-    config: dict[str, Any],
+    config: AppConfig,
     canvas_size: tuple[int, int],
     manifest: dict[str, Any],
 ) -> dict[str, Any]:
@@ -736,17 +788,14 @@ def write_common_outputs(
         encoding="utf-8",
     )
     (out_dir / "config_used.json").write_text(
-        json.dumps(config, indent=2, sort_keys=True) + "\n",
+        json.dumps(config.to_dict(), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    (out_dir / "README_RUN.md").write_text(
-        RUN_README_TEMPLATE.read_text(encoding="utf-8"),
-        encoding="utf-8",
-    )
-    (out_dir / "README_RUN-en.md").write_text(
-        RUN_README_EN_TEMPLATE.read_text(encoding="utf-8"),
-        encoding="utf-8",
-    )
+    for resource in RUN_README_OUTPUTS:
+        (out_dir / resource.output_name).write_text(
+            resource.path.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
     return manifest
 
 

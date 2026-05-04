@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <title>运行生成的脚本</title>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.55; margin: 24px; color: #2c241c; background: #fffaf0; }
+    h1 { font-size: 28px; margin: 0 0 18px; }
+    h2 { font-size: 19px; margin: 24px 0 10px; }
+    code { font-family: "Cascadia Mono", Consolas, monospace; background: #f6eddc; border-radius: 4px; padding: 1px 4px; }
+    a { color: #21666c; }
+  </style>
+</head>
+<body>
+  <h1>运行生成的脚本</h1>
+
+  <h2>第一次使用</h2>
+  <ol>
+    <li>给 A 板刷 SwiCC_RP2040 主固件：<a href="https://github.com/knflrpn/SwiCC_RP2040/releases">https://github.com/knflrpn/SwiCC_RP2040/releases</a></li>
+    <li>给 B 板刷 UART bridge：<a href="https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2">https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2</a></li>
+    <li>接线：A GPIO0/TX 到 B GPIO1/RX，A GPIO1/RX 到 B GPIO0/TX，A GND 到 B GND。不要连接 5V 或 3V3。</li>
+    <li>在 Switch 系统设置里打开 Pro Controller Wired Communication。</li>
+    <li>进入 Tomodachi Life 的 face paint 绘制界面，选择和 Living the Grid JSON 一致的方形 smooth 笔刷大小。</li>
+    <li>在 GUI 里选择 JSON、生成宏、选择串口，然后点“匹配手柄”或直接开始绘画。</li>
+  </ol>
+
+  <h2>以后每次绘画</h2>
+  <ol>
+    <li>打开同一个 face paint 绘制界面，确认笔刷大小和本次 JSON 一致。</li>
+    <li>普通 <code>image_part*.txt</code> 输出需要先把画笔移动到画布左上角第一个像素；<code>color_*.txt</code> 会在开头自动硬复位。</li>
+    <li>不要手动切换当前色板格，特别是运行 <code>color_*.txt</code> 时。</li>
+    <li>在 GUI 里点“开始绘画”，或按顺序发送本目录里的 <code>image_part*.txt</code> / <code>color_*.txt</code>。</li>
+    <li>按颜色拆分的 <code>color_*.txt</code> 需要按文件顺序运行；如果从中间恢复，先确认游戏里的 84 色板仍停在上一个颜色文件选中的颜色。</li>
+  </ol>
+
+  <p>如果 JSON 颜色带默认 84 色盘坐标，宏会用 <code>Y Y L1</code> 进入 84 色 Game Palette，并从左下角黑色或上一次选中的 84 色位置相对移动；其它颜色会进入 HSB 选色器并使用 JSON 里的 <code>press.h/s/b</code>。</p>
+</body>
+</html>

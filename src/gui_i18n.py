@@ -13,8 +13,8 @@ TRANSLATIONS = {
             "%name\n%width x %height grid, brush %{brush_px}px, "
             "%colors colors, palette %palette"
         ),
-        "hero.title": "JSON → Macro → SwiCC",
-        "hero.subtitle": "生成宏、匹配手柄、发送绘图都在后台执行；界面不会承载长文本。",
+        "hero.title": "Tomodachi 面部彩绘宏生成器",
+        "hero.subtitle": "把 Living the Grid JSON 转成 SwiCC 绘图脚本，并可匹配手柄后发送到游戏。",
         "theme.label": "主题",
         "theme.light": "亮色",
         "theme.dark": "暗色",
@@ -38,6 +38,8 @@ TRANSLATIONS = {
         "serial.match": "匹配手柄",
         "draw.group": "3. 绘画",
         "draw.button": "开始绘画",
+        "draw.open_readme": "阅读运行说明",
+        "draw.open_readme_tooltip": "在窗口里阅读本次输出的运行说明。",
         "draw.cancel": "取消",
         "draw.cancel_tooltip": "停止继续发送绘图宏；已进入 SwiCC 队列的帧可能还会执行一小段。",
         "draw.disabled_tooltip": "先生成宏，才可以开始绘画。",
@@ -66,6 +68,7 @@ TRANSLATIONS = {
         "error.no_port": "先选择串口。",
         "error.no_files": "先生成宏。",
         "error.open_living_grid": "无法打开 Living the Grid。",
+        "error.open_readme": "无法显示运行说明。",
         "generation.meta": "%out_dir\n%files files, %lines lines, %frames frames",
         "progress.transfer": "%percent  queue=%queue  ETA %eta",
     },
@@ -78,10 +81,10 @@ TRANSLATIONS = {
             "%name\n%width x %height grid, brush %{brush_px}px, "
             "%colors colors, palette %palette"
         ),
-        "hero.title": "JSON → Macro → SwiCC",
+        "hero.title": "Tomodachi Face Paint Macro Generator",
         "hero.subtitle": (
-            "Macro generation, controller pairing, and drawing run in background workers; "
-            "the UI never loads long macro text."
+            "Convert Living the Grid JSON into SwiCC drawing scripts, then pair a "
+            "controller and send them to the game."
         ),
         "theme.label": "Theme",
         "theme.light": "Light",
@@ -108,6 +111,8 @@ TRANSLATIONS = {
         "serial.match": "Pair Controller",
         "draw.group": "3. Draw",
         "draw.button": "Start Drawing",
+        "draw.open_readme": "Read Run Instructions",
+        "draw.open_readme_tooltip": "Read the run instructions for this generated output.",
         "draw.cancel": "Cancel",
         "draw.cancel_tooltip": (
             "Stop sending more drawing macros; queued SwiCC frames may still run briefly."
@@ -138,6 +143,7 @@ TRANSLATIONS = {
         "error.no_port": "Choose a serial port first.",
         "error.no_files": "Generate macros first.",
         "error.open_living_grid": "Could not open Living the Grid.",
+        "error.open_readme": "Could not display the run instructions.",
         "generation.meta": "%out_dir\n%files files, %lines lines, %frames frames",
         "progress.transfer": "%percent  queue=%queue  ETA %eta",
     },

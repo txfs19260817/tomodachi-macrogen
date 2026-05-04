@@ -232,10 +232,9 @@ class TestColorPickerPress(unittest.TestCase):
         lines = [line.text for line in writer.lines]
         self.assertNotIn("{R1} 1", lines)
         self.assertIn("{L1} 1", lines)
-        self.assertIn("{L U} 3", lines)
-        self.assertLess(lines.index("{L1} 1"), lines.index("{L U} 3"))
+        self.assertNotIn("{L U} 3", lines)
         self.assertEqual(lines.count("{R} 1"), 2)
-        self.assertEqual(lines.count("{D} 1"), 1)
+        self.assertEqual(lines.count("{D} 1"), 2)
 
     def test_current_slot_game_palette_extra_uses_side_strip_column(self) -> None:
         config = {
@@ -260,7 +259,31 @@ class TestColorPickerPress(unittest.TestCase):
         lines = [line.text for line in writer.lines]
         self.assertIn("{L1} 1", lines)
         self.assertEqual(lines.count("{R} 1"), 11)
-        self.assertEqual(lines.count("{D} 1"), 1)
+        self.assertEqual(lines.count("{D} 1"), 2)
+
+    def test_game_palette_navigation_remembers_last_selected_position(self) -> None:
+        config = {
+            "game_palette_cols": 11,
+            "timing": {
+                "tap_hold_frames": 1,
+                "tap_release_frames": 1,
+                "menu_open_frames": 1,
+                "screen_settle_frames": 1,
+                "menu_close_frames": 1,
+                "movement_hold_frames": 1,
+                "movement_release_frames": 1,
+            },
+        }
+        writer = MacroWriter(config)
+        picker = ColorPicker(writer, config)
+
+        picker.set_current_palette_slot_game(GamePaletteTarget(kind="grid", row=1, col=1))
+        picker.set_current_palette_slot_game(GamePaletteTarget(kind="grid", row=2, col=3))
+
+        lines = [line.text for line in writer.lines]
+        self.assertNotIn("{L U}", lines)
+        self.assertEqual(lines.count("{R} 1"), 2)
+        self.assertEqual(lines.count("{D} 1"), 2)
 
 
 if __name__ == "__main__":

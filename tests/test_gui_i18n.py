@@ -7,10 +7,13 @@ class TestGuiI18n(unittest.TestCase):
     def test_gui_translation_switches_between_zh_and_en(self) -> None:
         configure_i18n("zh")
         self.assertEqual(tr("generate.button"), "生成宏")
+        self.assertEqual(tr("hero.title"), "Tomodachi 面部彩绘宏生成器")
 
         set_locale("en")
+        self.assertEqual(tr("hero.title"), "Tomodachi Face Paint Macro Generator")
         self.assertEqual(tr("generate.button"), "Generate")
         self.assertEqual(tr("generate.open_living_grid"), "Open Living the Grid")
+        self.assertEqual(tr("draw.open_readme"), "Read Run Instructions")
         self.assertEqual(tr("draw.cancel"), "Cancel")
 
     def test_gui_translation_formats_preview_meta(self) -> None:

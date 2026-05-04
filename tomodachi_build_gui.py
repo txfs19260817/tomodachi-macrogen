@@ -3,12 +3,10 @@ import os
 import shutil
 from pathlib import Path
 
+from src.resources import BUNDLED_DATA_FILES
+
 ROOT = Path(__file__).resolve().parent
-DATA_FILES = (
-    "config.default.json",
-    "README_RUN.template.md",
-    "README_RUN-en.template.md",
-)
+DATA_FILES = BUNDLED_DATA_FILES
 
 
 def build_parser() -> argparse.ArgumentParser:

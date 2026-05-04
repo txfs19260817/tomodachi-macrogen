@@ -2,7 +2,7 @@
 
 Convert [Living the Grid](https://living-the-grid.com/) JSON exports into SwiCC `.txt` macros for Tomodachi Life face paint automation.
 
-This project no longer accepts image input. Living the Grid handles quantization, palette matching, and H/S/B press counts; this tool only generates runnable macros.
+Use it to generate drawing macros from a Living the Grid per-pixel JSON export, then optionally pair and send those macros through a SwiCC controller bridge.
 
 中文文档见 [README-zh.md](README-zh.md)。
 
@@ -68,8 +68,10 @@ Release assets.
 Run `uv run tomodachi-gui` from source, or use the Release build. The GUI provides the
 same workflow as the CLI: choose a Living the Grid JSON, generate output, pair the
 controller, then send the generated files while showing progress. It renders the JSON
-preview, supports Chinese/English plus light/dark themes, and keeps serial work in a
-background thread.
+preview, can show the generated run instructions in a separate window, supports
+Chinese/English plus light/dark themes, and keeps serial work in a background thread.
+
+![Tomodachi Macrogen GUI screenshot](docs/gui-screenshot.png)
 
 ## CLI
 
@@ -77,8 +79,8 @@ background thread.
 timestamped output directory, sends the controller pairing macro, waits 4 seconds, then
 sends the generated drawing macros using SwiCC `+Q` encoding and `+GQF` queue polling.
 
-Without `--port`, it only generates files. With `--match-controller` and no input, it only
-sends the pairing macro.
+Omit `--port` to write files for later use. Use `--match-controller` without an input
+JSON to run the controller pairing step by itself.
 
 Common commands:
 
@@ -92,7 +94,7 @@ uv run tomodachi-macrogen input.json --port COM5 --split-by-color
 # Only pair the controller
 uv run tomodachi-macrogen --port COM5 --match-controller
 
-# Generate files only, without touching serial
+# Generate files for later use
 uv run tomodachi-macrogen input.json --split-by-color
 
 # Clean generated outputs and caches
@@ -104,17 +106,17 @@ Output always goes to `out/<input-name>-<timestamp>/`.
 - `input`: Living the Grid JSON.
 - `--port COM5`: generate, pair, and draw through the selected serial port.
 - `--list-ports`: list available serial ports.
-- `--match-controller`: with no input, only send the controller pairing macro.
+- `--match-controller`: with no input, run the controller pairing step by itself.
 - `--config CONFIG`: extra config JSON overriding `config.default.json`.
 - `--palette-slots N`: available in-game palette slots, default `9`.
 - `--color-order frequency|original-palette|luminance|hue`: color order, default `original-palette`, matching Living the Grid UI order.
 - `--split-lines N`: max lines per part; `0` disables splitting.
-- `--split-by-color`: one file per color, useful for rerunning a single color.
+- `--split-by-color`: one file per color; run the generated color files in order.
 - `--clean-output`: delete generated outputs under `out/`.
 - `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
 
-For cleanup only, use `uv run tomodachi-clean`. Pass `--output` or `--cache` to limit
-cleanup to one target.
+For cleanup, use `uv run tomodachi-clean`. Pass `--output` or `--cache` to limit cleanup
+to one target.
 
 The drawing path is fixed to same-color horizontal run planning. Path mode flags were removed.
 
@@ -157,7 +159,7 @@ Enable Pro Controller Wired Communication in Switch system settings.
 3. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
 4. Do not manually change the selected palette swatch before running, especially with `--split-by-color`.
 
-The generated macro treats one Living the Grid cell as one brush stamp; movement is scaled by `brush.px`. If every used palette entry includes `game: {row, col}`, `game: {extra}`, or a label like `R1·C1`, the macro opens the current swatch with `Y Y L1`, then selects from the 84-color Game Palette by coordinates. Otherwise it opens the H/S/B picker and uses JSON `press.h/s/b` values. Each `color_*.txt` starts with a hard canvas reset: hold the stick upper-left for 7 seconds, then move right 192 and down 77.
+The generated macro treats one Living the Grid cell as one brush stamp; movement is scaled by `brush.px`. If every used palette entry includes `game: {row, col}`, `game: {extra}`, or a label like `R1·C1`, the macro opens the current swatch with `Y Y L1`, then selects from the 84-color Game Palette by moving relative to the lower-left black swatch or the last selected 84-color position. Otherwise it opens the H/S/B picker and uses JSON `press.h/s/b` values. Each `color_*.txt` starts with a hard canvas reset: hold the stick upper-left for 7 seconds, then move right 192 and down 77.
 
 ## Config
 
@@ -166,7 +168,7 @@ Defaults live in `config.default.json`. Current defaults are intentionally conse
 Common tuning fields:
 
 - `timing.*`: button, movement, and menu waits.
-- `game_palette_*`: dimensions and anchor timing for default Game Palette navigation.
+- `game_palette_*`: default Game Palette dimensions and timing.
 - `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`: recovery steps after the `color_*.txt` hard reset.
 - `timing.canvas_reset_*`: stick hold and settle timing for the `color_*.txt` hard reset.

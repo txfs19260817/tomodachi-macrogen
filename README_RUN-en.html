@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Running Generated Scripts</title>
+  <style>
+    body { font-family: "Segoe UI", Arial, sans-serif; line-height: 1.55; margin: 24px; color: #2c241c; background: #fffaf0; }
+    h1 { font-size: 28px; margin: 0 0 18px; }
+    h2 { font-size: 19px; margin: 24px 0 10px; }
+    code { font-family: "Cascadia Mono", Consolas, monospace; background: #f6eddc; border-radius: 4px; padding: 1px 4px; }
+    a { color: #21666c; }
+  </style>
+</head>
+<body>
+  <h1>Running Generated Scripts</h1>
+
+  <h2>First Use</h2>
+  <ol>
+    <li>Flash board A with the SwiCC_RP2040 main firmware: <a href="https://github.com/knflrpn/SwiCC_RP2040/releases">https://github.com/knflrpn/SwiCC_RP2040/releases</a></li>
+    <li>Flash board B with the UART bridge: <a href="https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2">https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2</a></li>
+    <li>Wire A GPIO0/TX to B GPIO1/RX, A GPIO1/RX to B GPIO0/TX, and A GND to B GND. Do not connect 5V or 3V3.</li>
+    <li>Enable Pro Controller Wired Communication in Switch system settings.</li>
+    <li>Open Tomodachi Life's face paint drawing screen and select the same square smooth brush size used by the Living the Grid JSON.</li>
+    <li>In the GUI, choose the JSON, generate macros, select the serial port, then pair the controller or start drawing directly.</li>
+  </ol>
+
+  <h2>Every Later Run</h2>
+  <ol>
+    <li>Open the same face paint drawing screen and confirm the brush size matches the current JSON.</li>
+    <li>For normal <code>image_part*.txt</code> output, move the brush cursor to the top-left first pixel first; <code>color_*.txt</code> starts with an automatic hard reset.</li>
+    <li>Do not manually change the selected palette swatch, especially when running <code>color_*.txt</code>.</li>
+    <li>In the GUI, click Start Drawing, or send this folder's <code>image_part*.txt</code> / <code>color_*.txt</code> files in order.</li>
+    <li>Run color-split <code>color_*.txt</code> files in file order; when resuming from the middle, first confirm the in-game 84-color palette is still on the color selected by the previous color file.</li>
+  </ol>
+
+  <p>If JSON colors include default 84-color palette coordinates, the macro enters the 84-color Game Palette with <code>Y Y L1</code>, then moves relative to the lower-left black swatch or the last selected 84-color position. Other colors use the HSB picker with JSON <code>press.h/s/b</code> values.</p>
+</body>
+</html>

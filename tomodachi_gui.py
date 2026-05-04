@@ -3,37 +3,21 @@ import time
 from html import escape
 from io import BytesIO
 from pathlib import Path
-from threading import Event
 
 from PIL import Image
 
-from src.gui_i18n import LOCALE_OPTIONS, configure_i18n, set_locale, tr
+from src.gui_i18n import LOCALE_OPTIONS, configure_i18n, current_locale, set_locale, tr
+from src.gui_theme import build_theme_style
+from src.resources import RUN_README_EN_HTML, RUN_README_HTML
 from swicc_runner import TransferProgress, import_serial_tools
-from tomodachi_macrogen import (
-    GenerationOptions,
-    GenerationResult,
-    SerialOptions,
-    generate_macros,
-    send_macro_files,
-)
+from tomodachi_macrogen import GenerationResult
 
 LIVING_THE_GRID_URL = "https://living-the-grid.com/"
 
 
-def format_duration(seconds: float | None) -> str:
-    if seconds is None or seconds < 0:
-        return "--:--"
-    total = int(seconds + 0.5)
-    hours, remainder = divmod(total, 3600)
-    minutes, secs = divmod(remainder, 60)
-    if hours:
-        return f"{hours:d}:{minutes:02d}:{secs:02d}"
-    return f"{minutes:02d}:{secs:02d}"
-
-
 def main() -> int:
     try:
-        from PyQt6.QtCore import QObject, Qt, QThread, QUrl, pyqtSignal
+        from PyQt6.QtCore import QObject, Qt, QThread, QUrl
         from PyQt6.QtGui import QActionGroup, QDesktopServices, QFont, QPixmap
         from PyQt6.QtWidgets import (
             QApplication,
@@ -52,78 +36,16 @@ def main() -> int:
             QProgressBar,
             QPushButton,
             QSizePolicy,
+            QTextBrowser,
             QVBoxLayout,
             QWidget,
         )
     except ImportError as error:
         raise SystemExit(f"PyQt6 import failed: {error}. Run `uv sync` first.") from error
 
+    from src.gui_workers import GenerateWorker, TransferWorker, format_duration
+
     configure_i18n()
-
-    class GenerateWorker(QObject):
-        status = pyqtSignal(str)
-        finished = pyqtSignal(object)
-        failed = pyqtSignal(str)
-
-        def __init__(self, input_path: Path, split_by_color: bool) -> None:
-            super().__init__()
-            self.input_path = input_path
-            self.split_by_color = split_by_color
-
-        def run(self) -> None:
-            try:
-                result = generate_macros(
-                    self.input_path,
-                    GenerationOptions(split_by_color=self.split_by_color),
-                    progress_callback=self.status.emit,
-                )
-            except Exception as error:  # noqa: BLE001 - surface worker errors in the GUI.
-                self.failed.emit(str(error))
-                return
-            self.finished.emit(result)
-
-    class TransferWorker(QObject):
-        progress = pyqtSignal(object)
-        finished = pyqtSignal()
-        cancelled = pyqtSignal()
-        failed = pyqtSignal(str)
-
-        def __init__(
-            self,
-            port: str,
-            files: list[Path],
-            *,
-            match_controller: bool,
-        ) -> None:
-            super().__init__()
-            self.port = port
-            self.files = files
-            self.match_controller = match_controller
-            self.started_at: float | None = None
-            self.cancel_event = Event()
-
-        def cancel(self) -> None:
-            self.cancel_event.set()
-
-        def run(self) -> None:
-            self.started_at = time.monotonic()
-            try:
-                send_macro_files(
-                    port=self.port,
-                    files=self.files,
-                    match_controller=self.match_controller,
-                    serial_options=SerialOptions(),
-                    progress_callback=self.progress.emit,
-                    should_cancel=self.cancel_event.is_set,
-                    show_progress_bar=False,
-                )
-            except Exception as error:  # noqa: BLE001 - serial failures need to reach the UI.
-                self.failed.emit(str(error))
-                return
-            if self.cancel_event.is_set():
-                self.cancelled.emit()
-                return
-            self.finished.emit()
 
     class MainWindow(QMainWindow):
         def __init__(self) -> None:
@@ -139,6 +61,7 @@ def main() -> int:
             self.link_color = "#21666c"
             self.threads: list[QThread] = []
             self.workers: list[QObject] = []
+            self.readme_windows: list[QTextBrowser] = []
 
             self.resize(1120, 740)
             self.setMinimumSize(960, 640)
@@ -262,11 +185,15 @@ def main() -> int:
             self.draw_button = QPushButton()
             self.draw_button.setObjectName("PrimaryButton")
             self.draw_button.clicked.connect(self.start_draw)
+            self.open_readme_button = QPushButton()
+            self.open_readme_button.clicked.connect(self.open_run_readme)
+            self.open_readme_button.setEnabled(False)
             self.cancel_draw_button = QPushButton()
             self.cancel_draw_button.clicked.connect(self.cancel_draw)
             self.update_draw_button_enabled()
             self.cancel_draw_button.setEnabled(False)
             button_row = QHBoxLayout()
+            button_row.addWidget(self.open_readme_button)
             button_row.addWidget(self.draw_button, 1)
             button_row.addWidget(self.cancel_draw_button)
             draw_layout.addWidget(self.current_file_label)
@@ -356,9 +283,12 @@ def main() -> int:
             self.match_button.setText(tr("serial.match"))
             self.draw_group.setTitle(tr("draw.group"))
             self.draw_button.setText(tr("draw.button"))
+            self.open_readme_button.setText(tr("draw.open_readme"))
+            self.open_readme_button.setToolTip(tr("draw.open_readme_tooltip"))
             self.cancel_draw_button.setText(tr("draw.cancel"))
             self.cancel_draw_button.setToolTip(tr("draw.cancel_tooltip"))
             self.update_draw_button_enabled()
+            self.update_open_readme_button_enabled()
             self.update_current_file_label()
             self.update_meta_label()
             self.update_status_label()
@@ -377,175 +307,9 @@ def main() -> int:
             self.current_theme = theme
             if hasattr(self, "theme_actions") and theme in self.theme_actions:
                 self.theme_actions[theme].setChecked(True)
-            dark = theme.casefold() == "dark"
-            if dark:
-                colors = {
-                    "window": "#161b1d",
-                    "card": "#20282b",
-                    "card_border": "#3d4b50",
-                    "preview": "#14191b",
-                    "preview_border": "#52656b",
-                    "text": "#f3eadc",
-                    "muted": "#b7aa98",
-                    "field": "#151b1d",
-                    "field_border": "#4b5b60",
-                    "button": "#344247",
-                    "button_hover": "#415258",
-                    "button_border": "#5a6d73",
-                    "button_disabled": "#273033",
-                    "disabled_text": "#81776a",
-                    "primary": "#d58b3a",
-                    "primary_hover": "#e39a4a",
-                    "primary_text": "#1a130c",
-                    "chunk": "#d58b3a",
-                }
-            else:
-                colors = {
-                    "window": "#efe7d7",
-                    "card": "#fffaf0",
-                    "card_border": "#dac7a8",
-                    "preview": "#f6eddc",
-                    "preview_border": "#c8ad85",
-                    "text": "#2c241c",
-                    "muted": "#796b5a",
-                    "field": "#fffdf8",
-                    "field_border": "#d2bea0",
-                    "button": "#ead9bd",
-                    "button_hover": "#f2e3cb",
-                    "button_border": "#c8ad85",
-                    "button_disabled": "#e6ded0",
-                    "disabled_text": "#9b8c78",
-                    "primary": "#21666c",
-                    "primary_hover": "#2b777e",
-                    "primary_text": "#fff8ea",
-                    "chunk": "#d58b3a",
-                }
-            self.link_color = colors["primary"]
-            self.setStyleSheet(
-                f"""
-                QMainWindow {{ background: {colors["window"]}; }}
-                QWidget {{ color: {colors["text"]}; }}
-                QMenuBar {{
-                    background: {colors["card"]};
-                    color: {colors["text"]};
-                    border-bottom: 1px solid {colors["card_border"]};
-                }}
-                QMenuBar::item {{
-                    background: transparent;
-                    color: {colors["text"]};
-                    padding: 5px 10px;
-                }}
-                QMenuBar::item:selected {{
-                    background: {colors["button_hover"]};
-                    color: {colors["text"]};
-                }}
-                QMenu {{
-                    background: {colors["card"]};
-                    color: {colors["text"]};
-                    border: 1px solid {colors["card_border"]};
-                    padding: 4px;
-                }}
-                QMenu::item {{
-                    color: {colors["text"]};
-                    padding: 6px 28px 6px 22px;
-                    background: transparent;
-                }}
-                QMenu::item:selected {{
-                    background: {colors["primary"]};
-                    color: {colors["primary_text"]};
-                }}
-                QMenu::indicator {{
-                    width: 14px;
-                    height: 14px;
-                }}
-                QFrame#PreviewCard, QFrame#ControlCard {{
-                    background: {colors["card"]};
-                    border: 1px solid {colors["card_border"]};
-                    border-radius: 18px;
-                }}
-                QLabel#Hero {{
-                    color: {colors["text"]};
-                    font-size: 28px;
-                    font-weight: 800;
-                }}
-                QLabel#SectionTitle {{
-                    color: {colors["text"]};
-                    font-size: 18px;
-                    font-weight: 700;
-                }}
-                QLabel#ExternalLink {{
-                    font-weight: 650;
-                    padding: 0 0 2px 2px;
-                }}
-                QLabel#Muted {{ color: {colors["muted"]}; }}
-                QLabel#PreviewLabel {{
-                    background: {colors["preview"]};
-                    border: 1px dashed {colors["preview_border"]};
-                    border-radius: 14px;
-                    color: {colors["muted"]};
-                }}
-                QGroupBox {{
-                    border: 1px solid {colors["card_border"]};
-                    border-radius: 12px;
-                    margin-top: 12px;
-                    padding: 14px 10px 10px 10px;
-                    color: {colors["text"]};
-                    font-weight: 700;
-                }}
-                QGroupBox::title {{
-                    subcontrol-origin: margin;
-                    left: 12px;
-                    padding: 0 6px;
-                    color: {colors["text"]};
-                    background: {colors["card"]};
-                }}
-                QLineEdit, QComboBox, QListWidget {{
-                    background: {colors["field"]};
-                    border: 1px solid {colors["field_border"]};
-                    border-radius: 8px;
-                    padding: 7px;
-                    color: {colors["text"]};
-                    selection-background-color: {colors["primary"]};
-                    selection-color: {colors["primary_text"]};
-                }}
-                QCheckBox {{
-                    color: {colors["text"]};
-                    spacing: 8px;
-                    font-weight: 600;
-                }}
-                QPushButton {{
-                    background: {colors["button"]};
-                    border: 1px solid {colors["button_border"]};
-                    border-radius: 9px;
-                    padding: 8px 12px;
-                    color: {colors["text"]};
-                    font-weight: 650;
-                }}
-                QPushButton:hover {{ background: {colors["button_hover"]}; }}
-                QPushButton:disabled {{
-                    color: {colors["disabled_text"]};
-                    background: {colors["button_disabled"]};
-                }}
-                QPushButton#PrimaryButton {{
-                    background: {colors["primary"]};
-                    color: {colors["primary_text"]};
-                    border: 1px solid {colors["primary"]};
-                }}
-                QPushButton#PrimaryButton:hover {{ background: {colors["primary_hover"]}; }}
-                QProgressBar {{
-                    background: {colors["field"]};
-                    border: 1px solid {colors["field_border"]};
-                    border-radius: 8px;
-                    height: 18px;
-                    color: {colors["text"]};
-                    text-align: center;
-                }}
-                QProgressBar::chunk {{
-                    background: {colors["chunk"]};
-                    border-radius: 7px;
-                }}
-                """
-            )
+            style = build_theme_style(theme)
+            self.link_color = style.link_color
+            self.setStyleSheet(style.stylesheet)
             if hasattr(self, "living_grid_link"):
                 self.update_living_grid_link()
 
@@ -565,6 +329,35 @@ def main() -> int:
         def open_living_grid(self) -> None:
             if not QDesktopServices.openUrl(QUrl(LIVING_THE_GRID_URL)):
                 self.show_error(tr("error.open_living_grid"))
+
+        def open_run_readme(self) -> None:
+            if self.result is None:
+                self.show_error(tr("error.no_files"))
+                return
+            filename = "README_RUN.html" if current_locale() == "zh" else "README_RUN-en.html"
+            readme_path = self.result.out_dir / filename
+            if not readme_path.exists():
+                readme_path = RUN_README_HTML if current_locale() == "zh" else RUN_README_EN_HTML
+            try:
+                html = readme_path.read_text(encoding="utf-8")
+            except OSError:
+                self.show_error(tr("error.open_readme"))
+                return
+            browser = QTextBrowser(self)
+            browser.setWindowTitle(tr("draw.open_readme"))
+            browser.setOpenExternalLinks(True)
+            browser.setSearchPaths([str(readme_path.parent)])
+            browser.setHtml(html)
+            browser.resize(760, 680)
+            browser.destroyed.connect(
+                lambda _object=None, window=browser: self.cleanup_readme_window(window)
+            )
+            self.readme_windows.append(browser)
+            browser.show()
+
+        def cleanup_readme_window(self, window: object) -> None:
+            if window in self.readme_windows:
+                self.readme_windows.remove(window)
 
         def load_json_preview(self, path: Path) -> None:
             try:
@@ -678,6 +471,7 @@ def main() -> int:
             finally:
                 self.set_busy(False, "status.generated")
                 self.update_draw_button_enabled()
+                self.update_open_readme_button_enabled()
 
         def set_preview_from_file(self, path: Path) -> None:
             try:
@@ -840,6 +634,9 @@ def main() -> int:
             self.draw_button.setToolTip(
                 tr("draw.enabled_tooltip") if has_files else tr("draw.disabled_tooltip")
             )
+
+        def update_open_readme_button_enabled(self) -> None:
+            self.open_readme_button.setEnabled(self.result is not None)
 
         def set_status(self, key: str, **kwargs: object) -> None:
             self.status_key = key
