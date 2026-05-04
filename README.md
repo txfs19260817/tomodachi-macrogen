@@ -43,6 +43,16 @@ uv run ruff check .
 uv run pytest -n auto tests
 ```
 
+Commit messages are checked with Commitizen and should use Conventional Commits.
+Enable the versioned git hook once:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Examples: `feat: add GUI color swatch`, `fix: close run instructions dialog`,
+`docs: update release notes`.
+
 Update the changelog after release-facing changes:
 
 ```bash

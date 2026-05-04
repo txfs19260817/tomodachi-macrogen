@@ -24,6 +24,7 @@ build = [
   "pyinstaller>=6.20",
 ]
 dev = [
+  "commitizen>=4.10",
   "git-cliff>=2.13.1",
   "pyupgrade>=3.20.0",
   "ruff>=0.11.0",
@@ -53,6 +54,13 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_provider = "pep621"
+version_scheme = "semver"
+update_changelog_on_bump = false
 
 [tool.git-cliff.changelog]
 header = """
@@ -98,12 +106,12 @@ commit_preprocessors = [
   { pattern = "\\((#([0-9]+))\\)", replace = "([#${3}](https://github.com/txfs19260817/tomodachi-macrogen/issues/${3}))" },
 ]
 commit_parsers = [
-  { message = "^[Ff]eat", group = "<!-- 0 -->Features" },
-  { message = "^[Aa]dd|^[Ii]ntroduce|^[Ss]upport|^[Ee]nable|^[Ii]ntegrate", group = "<!-- 0 -->Features" },
-  { message = "^[Ff]ix|^[Rr]epair|^[Cc]orrect", group = "<!-- 1 -->Fixes" },
-  { message = "^[Dd]oc|^[Rr]eadme|^[Pp]repare .*documentation", group = "<!-- 2 -->Documentation" },
-  { message = "^[Rr]efactor|^[Mm]odernize|^[Ss]implify|^[Rr]emove|^[Cc]lean|^[Mm]ove maintenance", group = "<!-- 3 -->Maintenance" },
-  { message = "^[Tt]est", group = "<!-- 4 -->Tests" },
-  { message = "^[Bb]uild|^[Cc][Ii]|^[Ww]orkflow|^[Rr]elease|^[Vv]ersion|^[Tt]ag|^[Uu]pdate .*workflow|^[Uu]pdate .*build", group = "<!-- 5 -->Build and Release" },
-  { message = ".*", group = "<!-- 6 -->Changes" },
+  { message = "^feat", group = "<!-- 0 -->Features" },
+  { message = "^fix", group = "<!-- 1 -->Fixes" },
+  { message = "^doc", group = "<!-- 2 -->Documentation" },
+  { message = "^perf", group = "<!-- 3 -->Performance" },
+  { message = "^refactor", group = "<!-- 4 -->Refactoring" },
+  { message = "^test", group = "<!-- 5 -->Tests" },
+  { message = "^build|^ci|^chore", group = "<!-- 6 -->Build and Maintenance" },
+  { message = ".*", group = "<!-- 7 -->Legacy Changes" },
 ]

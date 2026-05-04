@@ -42,6 +42,15 @@ uv run ruff check .
 uv run pytest -n auto tests
 ```
 
+提交标题用 Commitizen 检查，格式使用 Conventional Commits。第一次启用仓库内的 git hook：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+示例：`feat: add GUI color swatch`、`fix: close run instructions dialog`、
+`docs: update release notes`。
+
 有面向发布的改动后，更新 changelog：
 
 ```bash

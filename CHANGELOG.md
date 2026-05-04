@@ -4,68 +4,48 @@ All notable changes to this project are generated from Git history by git-cliff.
 
 ## [1.0.2] - 2026-05-04
 
-### Features
+### Legacy Changes
+- Prepare 1.0.2 release
 - Add git-cliff changelog generation
-- Integrate CI/CD workflow for GUI builds and releases
-
-
-### Fixes
-- Fix 84-color navigation and GUI resources
-- Fix 84 color palette navigation
-
-
-### Maintenance
-- Move maintenance commands to project scripts
-- Refactor pyproject.toml for project setup
-- Clean GUI build intermediates by default
-
-
-### Build and Release
-- Update version check and build commands in workflow
-
-
-### Changes
 - Improve GUI instructions and color status
+- Fix 84-color navigation and GUI resources
+- Move maintenance commands to project scripts
+- Update version check and build commands in workflow
+- Refactor pyproject.toml for project setup
 - Update pyproject.toml
+- Integrate CI/CD workflow for GUI builds and releases
+- Fix 84 color palette navigation
+- Clean GUI build intermediates by default
 
 
 ## [1.0.1] - 2026-05-03
 
-### Features
-- Add checkout step to GitHub Actions workflow
-
-
-### Documentation
+### Legacy Changes
 - Prepare 1.0.1 release documentation
+- Add checkout step to GitHub Actions workflow
 
 
 ## [1.0.0] - 2026-05-03
 
-### Features
-- Introduce semantic version 1.0.0
-- Add GUI cancellation and portable build support
-- Support LTG brush metadata and game palette hints
-- Add SwiCC serial runner and refine macro generation
-- Add GLaMS submodule and bilingual run docs
-- Add cache cleanup flag
-
-
-### Maintenance
-- Refactor GitHub Actions workflow for GUI build
-- Remove GLaMS submodule and web workflow docs
-- Clean macro workflow and docs
-- Remove unused palette helpers
-- Simplify split options and preserve palette order
-
-
-### Changes
+### Legacy Changes
 - Enhance GitHub Actions workflow for Python app
+- Introduce semantic version 1.0.0
 - Update uv setup action to version 8.1.0
+- Refactor GitHub Actions workflow for GUI build
 - Move Living the Grid link above generation step
+- Add GUI cancellation and portable build support
 - Infer game palette targets from colors
+- Support LTG brush metadata and game palette hints
 - Use drag drawing for horizontal pixel runs
 - Make English README the default
+- Remove GLaMS submodule and web workflow docs
+- Add SwiCC serial runner and refine macro generation
 - Make conservative timing the default
+- Clean macro workflow and docs
+- Remove unused palette helpers
+- Add GLaMS submodule and bilingual run docs
+- Simplify split options and preserve palette order
+- Add cache cleanup flag
 - Initial Living the Grid macro generator
 
 
