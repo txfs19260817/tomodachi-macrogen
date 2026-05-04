@@ -2,9 +2,10 @@
 
 All notable changes to this project are generated from Git history by git-cliff.
 
-## Unreleased
+## [1.0.2] - 2026-05-04
 
 ### Features
+- Add git-cliff changelog generation
 - Integrate CI/CD workflow for GUI builds and releases
 
 
