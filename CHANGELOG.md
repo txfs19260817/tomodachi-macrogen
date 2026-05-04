@@ -18,6 +18,7 @@ All notable changes to this project are generated from Git history by git-cliff.
 
 
 ### Build and Maintenance
+- Prepare 1.0.3 release
 - Enforce conventional commits locally
 
 
