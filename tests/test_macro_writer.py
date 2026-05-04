@@ -228,16 +228,6 @@ class TestMacroWriter(unittest.TestCase):
             ],
         )
 
-    def test_split_lines_zero_disables_splitting(self) -> None:
-        writer = MacroWriter()
-        writer.tap("A")
-        writer.tap("B")
-
-        self.assertEqual(
-            writer.split_output(0),
-            [["{A} 2", "{} 1", "{B} 2", "{} 1"]],
-        )
-
 
 if __name__ == "__main__":
     unittest.main()

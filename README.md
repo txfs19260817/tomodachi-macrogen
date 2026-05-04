@@ -91,7 +91,7 @@ Run `uv run tomodachi-gui` from source, or use the Release build. The GUI provid
 same workflow as the CLI: choose a Living the Grid JSON, generate output, pair the
 controller, then send the generated files while showing progress. It renders the JSON
 preview, can show the generated run instructions in a separate window, supports
-Chinese/English plus light/dark themes, lets non-84-color split outputs skip selected
+Chinese/English plus light/dark themes, lets non-84-color generated output skip selected
 color files, and keeps serial work in a background thread.
 
 ![Tomodachi Macrogen GUI screenshot](docs/gui-screenshot.png)
@@ -112,13 +112,13 @@ Common commands:
 uv run tomodachi-macrogen --list-ports
 
 # Generate, pair the controller, then draw
-uv run tomodachi-macrogen input.json --port COM5 --split-by-color
+uv run tomodachi-macrogen input.json --port COM5
 
 # Only pair the controller
 uv run tomodachi-macrogen --port COM5 --match-controller
 
 # Generate files for later use
-uv run tomodachi-macrogen input.json --split-by-color
+uv run tomodachi-macrogen input.json
 
 # Clean generated outputs and caches
 uv run tomodachi-clean
@@ -131,12 +131,7 @@ Output always goes to `out/<input-name>-<timestamp>/`.
 - `--list-ports`: list available serial ports.
 - `--match-controller`: with no input, run the controller pairing step by itself.
 - `--config CONFIG`: extra config JSON overriding `config.default.json`.
-- `--palette-slots N`: available in-game palette slots, default `9`.
-- `--color-order frequency|original-palette|luminance|hue`: color order, default `original-palette`, matching Living the Grid UI order.
-- `--split-lines N`: max lines per part; `0` disables splitting.
-- `--split-by-color`: one file per color; run the generated color files in order. For
-  non-84-color output, delete a `color_*.txt` first if that color was filled manually.
-  Do not delete 84-color files because later files depend on relative palette position.
+- `--color-order frequency|original-palette|luminance|hue`: color file order, default `original-palette`, matching Living the Grid UI order.
 - `--clean-output`: delete generated outputs under `out/`.
 - `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
 
@@ -147,8 +142,7 @@ The drawing path is fixed to same-color horizontal run planning. Path mode flags
 
 ## Outputs
 
-- `image_part*.txt`: normal macro parts.
-- `color_XX_*.txt`: single-color parts from `--split-by-color`.
+- `color_XX_*.txt`: one generated macro per used color, in the order they should run.
 - `preview_quantized.png`: preview reconstructed from JSON.
 - `reconstructed_from_macro.png`: image reconstructed from generated draw coordinates.
 - `palette_report.csv`: colors, H/S/B values, pixel counts, and slot assignment.
@@ -182,8 +176,8 @@ Enable Pro Controller Wired Communication in Switch system settings.
 1. Open the face paint drawing screen.
 2. Reset the in-game brush to 1 px.
 3. For 84-color mode, confirm the 84-color palette starts on the lower-left black swatch (R7C1). For full-color / HSB mode, the 1 px brush reset is the only color-picker prerequisite.
-4. For normal `image_part*.txt`, move the brush cursor to the top-left first pixel first.
-5. Do not manually change the selected palette swatch before running, especially with `--split-by-color`.
+4. Run generated `color_*.txt` files in filename order. Each file hard-resets the brush cursor to the canvas start.
+5. Do not manually change the selected palette swatch between generated files.
 
 The generated macro treats one Living the Grid cell as one brush stamp; movement is scaled by `brush.px`. If every used palette entry includes `game: {row, col}`, `game: {extra}`, or a label like `R1·C1`, the macro opens the current swatch with `Y Y L1`, then selects from the 84-color Game Palette by moving relative to the lower-left black swatch or the last selected 84-color position. Otherwise it opens the H/S/B picker and uses JSON `press.h/s/b` values. Each `color_*.txt` starts with a hard canvas reset: hold the stick upper-left for 7 seconds, then move right 192 and down 77.
 
@@ -198,7 +192,6 @@ Common tuning fields:
 - `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`: recovery steps after the `color_*.txt` hard reset.
 - `timing.canvas_reset_*`: stick hold and settle timing for the `color_*.txt` hard reset.
-- `split_lines`: default part size.
 
 ## References
 

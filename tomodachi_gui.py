@@ -118,7 +118,6 @@ def main() -> int:
         from PyQt6.QtWidgets import (
             QAbstractItemView,
             QApplication,
-            QCheckBox,
             QComboBox,
             QDialog,
             QFileDialog,
@@ -239,8 +238,6 @@ def main() -> int:
             self.input_edit = QLineEdit()
             self.input_button = QPushButton()
             self.input_button.clicked.connect(self.choose_json)
-            self.split_color_check = QCheckBox()
-            self.split_color_check.setChecked(True)
             self.generate_button = QPushButton()
             self.generate_button.setObjectName("PrimaryButton")
             self.generate_button.clicked.connect(self.start_generation)
@@ -253,8 +250,7 @@ def main() -> int:
             generate_layout.addWidget(self.input_button, 0, 2)
             generate_layout.addWidget(self.output_text_label, 1, 0)
             generate_layout.addWidget(self.output_hint_label, 1, 1, 1, 2)
-            generate_layout.addWidget(self.split_color_check, 2, 1, 1, 2)
-            generate_layout.addWidget(self.generate_button, 3, 2)
+            generate_layout.addWidget(self.generate_button, 2, 2)
             right_layout.addWidget(self.generate_group)
 
             self.serial_group = QGroupBox()
@@ -389,7 +385,6 @@ def main() -> int:
             self.input_button.setText(tr("generate.choose_json"))
             self.update_living_grid_link()
             self.output_hint_label.setText(tr("generate.output_hint"))
-            self.split_color_check.setText(tr("generate.split_by_color"))
             self.generate_button.setText(tr("generate.button"))
             self.serial_group.setTitle(tr("serial.group"))
             self.port_text_label.setText(tr("serial.port"))
@@ -576,7 +571,7 @@ def main() -> int:
                 return
             input_path = Path(input_text)
             self.set_busy(True, "status.generating")
-            worker = GenerateWorker(input_path, self.split_color_check.isChecked())
+            worker = GenerateWorker(input_path)
             thread = self.start_worker(worker)
             thread.started.connect(worker.run)
             worker.status.connect(self.set_status)

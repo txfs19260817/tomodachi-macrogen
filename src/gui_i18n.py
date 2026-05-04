@@ -30,7 +30,6 @@ TRANSLATIONS = {
         "generate.open_living_grid": "打开 Living the Grid",
         "generate.open_living_grid_tooltip": "在默认浏览器中打开 Living the Grid 生成 JSON。",
         "generate.output_hint": "自动写入 out/<JSON 名>-<时间戳>/",
-        "generate.split_by_color": "按颜色拆分（推荐，便于中断后重跑单色）",
         "generate.button": "生成宏",
         "serial.group": "2. 串口和手柄",
         "serial.port": "串口",
@@ -112,7 +111,6 @@ TRANSLATIONS = {
             "Open Living the Grid in your default browser to create JSON."
         ),
         "generate.output_hint": "Automatically writes to out/<JSON name>-<timestamp>/",
-        "generate.split_by_color": "Split by color (recommended for rerunning one color)",
         "generate.button": "Generate",
         "serial.group": "2. Serial and Controller",
         "serial.port": "Port",

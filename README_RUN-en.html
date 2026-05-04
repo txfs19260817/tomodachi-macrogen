@@ -28,11 +28,9 @@
   <ol>
     <li>Open the same face paint drawing screen and reset the brush to 1 px.</li>
     <li>84-color mode also requires the 84-color palette start on the lower-left black swatch (R7C1); full-color / HSB mode only requires the brush to be 1 px.</li>
-    <li>For normal <code>image_part*.txt</code> output, move the brush cursor to the top-left first pixel first; <code>color_*.txt</code> starts with an automatic hard reset.</li>
-    <li>Do not manually change the selected palette swatch, especially when running <code>color_*.txt</code>.</li>
-    <li>In the GUI, uncheck non-84-color <code>color_*.txt</code> files to skip a color, for example a background already filled manually with the paint bucket; 84-color mode cannot skip files.</li>
-    <li>If sending non-84-color <code>color_*.txt</code> manually with the CLI / SwiCC, delete unwanted color files first, then send the remaining filenames in order.</li>
-    <li>Run color-split <code>color_*.txt</code> files in file order; when resuming from the middle, first confirm the in-game 84-color palette is still on the color selected by the previous color file.</li>
+    <li>Run <code>color_*.txt</code> files in filename order. Each file starts with an automatic hard reset to the canvas start.</li>
+    <li>For non-84-color output, uncheck files in the GUI; when sending manually with the CLI / SwiCC, delete unwanted color files first to skip a background color already filled with the paint bucket. 84-color mode cannot skip files.</li>
+    <li>Do not manually change the selected palette swatch between generated files. When resuming 84-color output from the middle, first confirm the in-game palette is still on the color selected by the previous color file.</li>
   </ol>
 
   <p>If JSON colors include default 84-color palette coordinates, the macro enters the 84-color Game Palette with <code>Y Y L1</code>, then moves relative to the lower-left black swatch or the last selected 84-color position. Other colors use the HSB picker with JSON <code>press.h/s/b</code> values.</p>

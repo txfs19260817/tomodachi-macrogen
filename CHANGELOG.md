@@ -8,6 +8,10 @@ All notable changes to this project are generated from Git history by git-cliff.
 - Skip non-84 color files in GUI
 
 
+### Refactoring
+- Remove legacy split modes
+
+
 ### Build and Maintenance
 - Enforce conventional commits locally
 

@@ -28,16 +28,15 @@ class GenerateWorker(QObject):
     finished = pyqtSignal(object)
     failed = pyqtSignal(str)
 
-    def __init__(self, input_path: Path, split_by_color: bool) -> None:
+    def __init__(self, input_path: Path) -> None:
         super().__init__()
         self.input_path = input_path
-        self.split_by_color = split_by_color
 
     def run(self) -> None:
         try:
             result = generate_macros(
                 self.input_path,
-                GenerationOptions(split_by_color=self.split_by_color),
+                GenerationOptions(),
                 progress_callback=self.status.emit,
             )
         except Exception as error:  # noqa: BLE001 - surface worker errors in the GUI.

@@ -16,7 +16,7 @@ from src.color_picker import ColorPicker, GamePalettePosition
 from src.config import AppConfig, ConfigInput, as_app_config, deep_merge
 from src.living_grid import LivingGridData, load_living_grid_json
 from src.macro_writer import MacroWriter
-from src.palette import BatchColor, PaletteColor, flatten_batches, make_batches, rgb_to_hsv
+from src.palette import BatchColor, PaletteColor, rgb_to_hsv
 from src.path_planner import plan_color_pixels
 from src.resources import RUN_README_OUTPUTS, SOURCE_ROOT
 from swicc_runner import (
@@ -37,10 +37,7 @@ class GenerationOptions:
     config_path: str | Path | None = None
     output_root: str | Path | None = None
     timestamp: str | None = None
-    palette_slots: int | None = None
     color_order: str | None = None
-    split_lines: int | None = None
-    split_by_color: bool = False
 
 
 @dataclass(frozen=True)
@@ -129,16 +126,10 @@ def main() -> int:
         args.input,
         GenerationOptions(
             config_path=args.config,
-            palette_slots=args.palette_slots,
             color_order=args.color_order,
-            split_lines=args.split_lines,
-            split_by_color=args.split_by_color,
         ),
     )
-    if args.split_by_color:
-        print(f"Wrote color-split Living the Grid macros to {result.out_dir}")
-    else:
-        print(f"Wrote Living the Grid macro to {result.out_dir}")
+    print(f"Wrote Living the Grid macros to {result.out_dir}")
     if args.port:
         print("Pairing controller and sending drawing macros...")
         send_macro_files(
@@ -205,21 +196,12 @@ def generate_macros(
     if config.canvas_cell_step is None:
         config = config.with_canvas_cell_step(grid.brush_px)
     colors = build_living_grid_colors(grid, config.color_order)
-    batches = make_batches(colors, config.palette_slots)
     direct_palette = has_game_palette_coordinates(grid, colors)
     palette_source = "game" if direct_palette else "auto"
 
     report_generation_progress(progress_callback, "status.planning_macros")
     grid.preview.save(out_dir / "preview_quantized.png")
-    macro_output = build_macro_output(
-        out_dir=out_dir,
-        config=config,
-        grid=grid,
-        colors=colors,
-        batches=batches,
-        direct_palette=direct_palette,
-        split_by_color=options.split_by_color,
-    )
+    macro_output = build_color_split_output(out_dir, config, grid, colors)
     macro_output.reconstructed.save(out_dir / "reconstructed_from_macro.png")
 
     report_generation_progress(progress_callback, "status.writing_output")
@@ -240,21 +222,6 @@ def generate_macros(
     return build_generation_result(input_path, out_dir, manifest)
 
 
-def build_macro_output(
-    *,
-    out_dir: Path,
-    config: AppConfig,
-    grid: LivingGridData,
-    colors: list[PaletteColor],
-    batches: list[list[BatchColor]],
-    direct_palette: bool,
-    split_by_color: bool,
-) -> MacroOutput:
-    if split_by_color:
-        return build_color_split_output(out_dir, config, grid, colors)
-    return build_line_split_output(out_dir, config, grid, colors, batches, direct_palette)
-
-
 def build_color_split_output(
     out_dir: Path,
     config: AppConfig,
@@ -271,31 +238,6 @@ def build_color_split_output(
         reconstructed=reconstruct_color_split_image(grid, writers),
         total_lines=sum(len(writer.lines) for _color, writer in writers),
         total_frames=sum(writer.total_frames() for _color, writer in writers),
-    )
-
-
-def build_line_split_output(
-    out_dir: Path,
-    config: AppConfig,
-    grid: LivingGridData,
-    colors: list[PaletteColor],
-    batches: list[list[BatchColor]],
-    direct_palette: bool,
-) -> MacroOutput:
-    writer = (
-        generate_direct_palette_macro(config, grid, colors)
-        if direct_palette
-        else generate_living_grid_macro(config, grid, batches)
-    )
-    batch_colors = color_split_report(colors) if direct_palette else flatten_batches(batches)
-    return MacroOutput(
-        split_strategy="lines",
-        batch_count=0 if direct_palette else len(batches),
-        batch_colors=batch_colors,
-        part_files=write_parts(out_dir, "image_part", writer.split_output(config.split_lines)),
-        reconstructed=reconstruct_batched_image(grid, writer, batch_colors),
-        total_lines=len(writer.lines),
-        total_frames=writer.total_frames(),
     )
 
 
@@ -351,24 +293,10 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="With no input, only send the controller pairing macro",
     )
-    parser.add_argument("--palette-slots", type=int, help="Available game palette slots")
     parser.add_argument(
         "--color-order",
         choices=["frequency", "original-palette", "luminance", "hue"],
-        help="Order colors before assigning palette slots",
-    )
-    parser.add_argument(
-        "--split-lines",
-        type=int,
-        help="Maximum macro lines per part; 0 disables line-based splitting",
-    )
-    parser.add_argument(
-        "--split-by-color",
-        action="store_true",
-        help=(
-            "Write one macro txt per color; each file sets slot 0 and starts from a "
-            "hard canvas reset"
-        ),
+        help="Order generated color files",
     )
     parser.add_argument(
         "--clean-output",
@@ -454,9 +382,7 @@ def load_config(config_path: str | Path | None) -> AppConfig:
 
 def apply_generation_overrides(config: AppConfig, options: GenerationOptions) -> AppConfig:
     return config.with_overrides(
-        palette_slots=options.palette_slots,
         color_order=options.color_order,
-        split_lines=options.split_lines,
     )
 
 
@@ -544,54 +470,6 @@ def build_living_grid_colors(grid: LivingGridData, order: str) -> list[PaletteCo
     return colors
 
 
-def generate_living_grid_macro(
-    config: ConfigInput,
-    grid: LivingGridData,
-    batches: list[list[BatchColor]],
-) -> MacroWriter:
-    config = as_app_config(config)
-    writer = MacroWriter(config)
-    picker = ColorPicker(writer, config)
-
-    for batch in batches:
-        for batch_color in batch:
-            palette_entry = grid.palette[batch_color.color.color_index]
-            picker.set_palette_slot_press(batch_color.assigned_slot, palette_entry.press)
-
-        for batch_color in batch:
-            picker.activate_palette_slot(batch_color.assigned_slot)
-            pixels = plan_color_pixels(
-                grid.indices,
-                batch_color.color.color_index,
-                start=writer.canvas_position(),
-            )
-            writer.draw_pixels(pixels)
-
-    return writer
-
-
-def generate_direct_palette_macro(
-    config: ConfigInput,
-    grid: LivingGridData,
-    colors: list[PaletteColor],
-) -> MacroWriter:
-    config = as_app_config(config)
-    writer = MacroWriter(config)
-    picker = ColorPicker(writer, config)
-
-    for color in colors:
-        palette_entry = grid.palette[color.color_index]
-        select_current_color(picker, palette_entry)
-        pixels = plan_color_pixels(
-            grid.indices,
-            color.color_index,
-            start=writer.canvas_position(),
-        )
-        writer.draw_pixels(pixels)
-
-    return writer
-
-
 def generate_color_split_macros(
     config: ConfigInput,
     grid: LivingGridData,
@@ -662,45 +540,9 @@ def reconstruct_color_split_image(
     return image
 
 
-def reconstruct_batched_image(
-    grid: LivingGridData,
-    writer: MacroWriter,
-    batch_colors: list[BatchColor],
-) -> Image.Image:
-    image = Image.new("RGBA", (grid.width, grid.height), (0, 0, 0, 0))
-    pixels = image.load()
-    event_index = 0
-    for batch_color in batch_colors:
-        rgba = (*batch_color.color.rgb, 255)
-        for _ in range(batch_color.color.pixel_count):
-            if event_index >= len(writer.draw_events):
-                break
-            x, y = writer.draw_events[event_index]
-            event_index += 1
-            if 0 <= x < grid.width and 0 <= y < grid.height:
-                pixels[x, y] = rgba
-    return image
-
-
 def _luminance(rgb: tuple[int, int, int]) -> float:
     r, g, b = rgb
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-
-def write_parts(out_dir: Path, prefix: str, parts: list[list[str]]) -> list[dict[str, Any]]:
-    written: list[dict[str, Any]] = []
-    for index, lines in enumerate(parts, start=1):
-        filename = f"{prefix}{index}.txt"
-        path = out_dir / filename
-        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        written.append(
-            {
-                "file": filename,
-                "line_count": len(lines),
-                "frame_count": sum(_line_frames(line) for line in lines),
-            }
-        )
-    return written
 
 
 def write_color_parts(
@@ -814,16 +656,6 @@ def build_generation_result(
         macro_files=[out_dir / str(part["file"]) for part in manifest.get("parts", [])],
         manifest=manifest,
     )
-
-
-def _line_frames(line: str) -> int:
-    parts = line.strip().split()
-    if not parts:
-        return 0
-    try:
-        return int(parts[-1])
-    except ValueError:
-        return 0
 
 
 if __name__ == "__main__":

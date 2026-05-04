@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ "${TOMODACHI_CHANGELOG_HOOK:-}" = "1" ]; then
+  exit 0
+fi
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv is required to update CHANGELOG.md with git-cliff." >&2
+  exit 1
+fi
+
+uv run --group dev git-cliff --config pyproject.toml --output CHANGELOG.md
+
+if git diff --quiet -- CHANGELOG.md; then
+  exit 0
+fi
+
+git add -- CHANGELOG.md
+TOMODACHI_CHANGELOG_HOOK=1 git commit --amend --no-edit --no-verify

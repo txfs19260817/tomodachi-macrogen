@@ -37,7 +37,6 @@ BUTTON_ALIASES = {
 class MacroLine:
     text: str
     frames: int
-    safe_split_after: bool = False
 
 
 def normalize_button(button: str) -> str:
@@ -67,12 +66,10 @@ def format_buttons(buttons: str | Iterable[str] | None) -> str:
 def format_controller_state(
     buttons: str | Iterable[str] | None,
     frames: int,
-    *,
-    safe_split_after: bool = False,
 ) -> MacroLine:
     if frames <= 0:
         raise ValueError("frames must be greater than zero")
-    return MacroLine(f"{format_buttons(buttons)} {frames}", frames, safe_split_after)
+    return MacroLine(f"{format_buttons(buttons)} {frames}", frames)
 
 
 def format_stick(
@@ -83,15 +80,10 @@ def format_stick(
     frames: int,
     *,
     buttons: Sequence[str] | None = None,
-    safe_split_after: bool = False,
 ) -> MacroLine:
     if frames <= 0:
         raise ValueError("frames must be greater than zero")
     values = (lx, ly, rx, ry)
     if any(value < 0 or value > 255 for value in values):
         raise ValueError("stick values must be in the range 0..255")
-    return MacroLine(
-        f"{format_buttons(buttons)} ({lx} {ly} {rx} {ry}) {frames}",
-        frames,
-        safe_split_after,
-    )
+    return MacroLine(f"{format_buttons(buttons)} ({lx} {ly} {rx} {ry}) {frames}", frames)

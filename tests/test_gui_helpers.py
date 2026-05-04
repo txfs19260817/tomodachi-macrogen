@@ -13,7 +13,7 @@ def test_build_part_color_map_uses_color_split_part_hex_values() -> None:
         "parts": [
             {"file": "color_01_FFFFFF.txt", "hex": "#ffffff"},
             {"file": "nested/color_02_000000.txt", "hex": "#000000"},
-            {"file": "image_part1.txt"},
+            {"file": "manifest.json"},
             {"file": "bad.txt", "hex": "not-a-color"},
         ]
     }
@@ -35,7 +35,7 @@ def test_build_macro_file_infos_joins_manifest_part_metadata() -> None:
     paths = [
         Path("out/color_01_FFFFFF.txt"),
         Path("out/color_02_000000.txt"),
-        Path("out/image_part1.txt"),
+        Path("out/manifest.json"),
     ]
     manifest = {
         "parts": [
@@ -72,7 +72,6 @@ def test_build_macro_file_infos_joins_manifest_part_metadata() -> None:
     assert infos[2].pixel_count is None
 
 
-def test_macro_file_skip_is_allowed_only_for_non_84_color_split_output() -> None:
+def test_macro_file_skip_is_allowed_only_for_non_84_color_output() -> None:
     assert is_macro_file_skip_allowed({"split_strategy": "color", "palette_source": "auto"})
     assert not is_macro_file_skip_allowed({"split_strategy": "color", "palette_source": "game"})
-    assert not is_macro_file_skip_allowed({"split_strategy": "lines", "palette_source": "auto"})

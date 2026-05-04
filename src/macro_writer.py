@@ -1,7 +1,6 @@
 from collections.abc import Iterable
 
 from .config import ConfigInput, as_app_config
-from .splitter import split_macro_lines
 from .swicc_format import (
     MacroLine,
     format_controller_state,
@@ -37,7 +36,7 @@ class MacroWriter:
         self.lines.append(format_controller_state(buttons, frames))
 
     def release(self, frames: int) -> None:
-        self.lines.append(format_controller_state(None, frames, safe_split_after=True))
+        self.lines.append(format_controller_state(None, frames))
 
     def wait(self, frames: int) -> None:
         self.release(frames)
@@ -61,11 +60,7 @@ class MacroWriter:
         *,
         buttons: str | Iterable[str] | None = None,
     ) -> None:
-        neutral = self._neutral_stick()
-        safe = (lx, ly, rx, ry) == (neutral, neutral, neutral, neutral)
-        self.lines.append(
-            format_stick(lx, ly, rx, ry, frames, buttons=buttons, safe_split_after=safe)
-        )
+        self.lines.append(format_stick(lx, ly, rx, ry, frames, buttons=buttons))
 
     def move_cursor_to(self, x: int, y: int) -> None:
         target_x = int(x) + self.config.canvas_origin_x
@@ -121,13 +116,6 @@ class MacroWriter:
         hold = self.timing.draw_hold_frames
         release = self.timing.draw_release_frames
         self.tap("A", hold, release)
-
-    def split_output(
-        self,
-        max_lines_per_part: int | None = None,
-        max_frames_per_part: int | None = None,
-    ) -> list[list[str]]:
-        return split_macro_lines(self.lines, max_lines_per_part, max_frames_per_part)
 
     def total_frames(self) -> int:
         return sum(line.frames for line in self.lines)

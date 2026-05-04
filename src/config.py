@@ -222,7 +222,6 @@ class AppConfig:
     anchor_colour_rect_method: str = "analog"
     canvas_reset_right_steps: int = 192
     canvas_reset_down_steps: int = 77
-    split_lines: int | None = 50000
     timing: TimingConfig = field(default_factory=TimingConfig)
     stick: StickConfig = field(default_factory=StickConfig)
 
@@ -286,7 +285,6 @@ class AppConfig:
                 "canvas_reset_down_steps",
                 defaults.canvas_reset_down_steps,
             ),
-            split_lines=_as_optional_int(data, "split_lines", defaults.split_lines),
             timing=TimingConfig.from_mapping(_as_mapping(data.get("timing"))),
             stick=StickConfig.from_mapping(_as_mapping(data.get("stick"))),
         )
@@ -303,15 +301,12 @@ class AppConfig:
         *,
         palette_slots: int | None = None,
         color_order: str | None = None,
-        split_lines: int | None = None,
     ) -> AppConfig:
         updates: dict[str, Any] = {}
         if palette_slots is not None:
             updates["palette_slots"] = palette_slots
         if color_order is not None:
             updates["color_order"] = color_order
-        if split_lines is not None:
-            updates["split_lines"] = split_lines
         return replace(self, **updates) if updates else self
 
     def to_dict(self) -> dict[str, Any]:

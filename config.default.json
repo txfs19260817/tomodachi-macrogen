@@ -12,7 +12,6 @@
   "anchor_colour_rect_method": "analog",
   "canvas_reset_right_steps": 192,
   "canvas_reset_down_steps": 77,
-  "split_lines": 50000,
   "timing": {
     "tap_hold_frames": 6,
     "tap_release_frames": 6,

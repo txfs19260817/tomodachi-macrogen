@@ -97,11 +97,6 @@ def build_theme_style(theme: str) -> ThemeStyle:
             selection-background-color: {colors["primary"]};
             selection-color: {colors["primary_text"]};
         }}
-        QCheckBox {{
-            color: {colors["text"]};
-            spacing: 8px;
-            font-weight: 600;
-        }}
         QPushButton {{
             background: {colors["button"]};
             border: 1px solid {colors["button_border"]};

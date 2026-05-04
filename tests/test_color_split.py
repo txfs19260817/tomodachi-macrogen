@@ -17,15 +17,14 @@ from tomodachi_macrogen import (
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "example.json"
 
 
-class TestSplitByColor(unittest.TestCase):
-    def test_split_by_color_writes_one_file_per_used_color(self) -> None:
+class TestColorSplit(unittest.TestCase):
+    def test_default_output_writes_one_file_per_used_color(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             result = generate_macros(
                 FIXTURE,
                 GenerationOptions(
                     output_root=tmp,
                     timestamp="color_parts",
-                    split_by_color=True,
                 ),
             )
             out_dir = result.out_dir
@@ -37,7 +36,6 @@ class TestSplitByColor(unittest.TestCase):
             self.assertTrue(
                 all(part["palette_source"] in {"game", "hsb"} for part in manifest["parts"])
             )
-            self.assertFalse(list(out_dir.glob("image_part*.txt")))
             self.assertEqual(
                 len(list(out_dir.glob("color_*.txt"))),
                 manifest["palette_color_count"],
@@ -100,7 +98,7 @@ class TestSplitByColor(unittest.TestCase):
             )
             out_dir = result.out_dir
 
-            part = (out_dir / "image_part1.txt").read_text(encoding="utf-8")
+            part = result.macro_files[0].read_text(encoding="utf-8")
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["canvas_cell_step"], 3)
             self.assertEqual(manifest["palette_source"], "game")
@@ -190,7 +188,7 @@ class TestSplitByColor(unittest.TestCase):
             )
             out_dir = result.out_dir
 
-            part = (out_dir / "image_part1.txt").read_text(encoding="utf-8")
+            part = result.macro_files[0].read_text(encoding="utf-8")
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["palette_source"], "game")
             self.assertNotIn("{R1}", part)
@@ -224,7 +222,7 @@ class TestSplitByColor(unittest.TestCase):
             )
             out_dir = result.out_dir
 
-            part = (out_dir / "image_part1.txt").read_text(encoding="utf-8")
+            part = result.macro_files[0].read_text(encoding="utf-8")
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["palette_source"], "auto")
             self.assertIn("{R1}", part)

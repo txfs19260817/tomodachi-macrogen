@@ -86,7 +86,7 @@ tag 发布就是版本 hook：workflow 会检查 `vX.Y.Z` 是否和 `pyproject.t
 源码运行用 `uv run tomodachi-gui`，普通使用建议下载 Release 包。GUI 把 CLI 的流程
 放到一个窗口里：选择 Living the Grid JSON、生成输出、匹配手柄、发送绘图并显示进度。
 GUI 会渲染 JSON 预览图，可在独立窗口阅读本次运行说明，支持中文/英文和亮色/暗色主题，
-非 84 色的按颜色拆分输出可以取消勾选某个颜色文件，串口发送在后台线程执行。
+非 84 色输出可以取消勾选某个颜色文件，串口发送在后台线程执行。
 
 ![Tomodachi Macrogen GUI 截图](docs/gui-screenshot.png)
 
@@ -106,13 +106,13 @@ GUI 会渲染 JSON 预览图，可在独立窗口阅读本次运行说明，支�
 uv run tomodachi-macrogen --list-ports
 
 # 生成、匹配手柄、开始绘画
-uv run tomodachi-macrogen input.json --port COM5 --split-by-color
+uv run tomodachi-macrogen input.json --port COM5
 
 # 单独匹配手柄
 uv run tomodachi-macrogen --port COM5 --match-controller
 
 # 生成文件，稍后再发送
-uv run tomodachi-macrogen input.json --split-by-color
+uv run tomodachi-macrogen input.json
 
 # 清理输出和缓存
 uv run tomodachi-clean
@@ -125,10 +125,7 @@ uv run tomodachi-clean
 - `--list-ports`：列出可用串口。
 - `--match-controller`：不提供 JSON 时，单独执行匹配手柄步骤。
 - `--config CONFIG`：额外配置，会覆盖 `config.default.json`。
-- `--palette-slots N`：游戏内可用色板格数，默认 `9`。
-- `--color-order frequency|original-palette|luminance|hue`：颜色顺序，默认 `original-palette`，也就是 Living the Grid UI 顺序。
-- `--split-lines N`：每个 part 最多多少行；`0` 表示禁用切分。
-- `--split-by-color`：一个颜色一个文件，生成的颜色文件需要按顺序运行。非 84 色输出里，如果某个颜色已经手动填充，可以先删除对应 `color_*.txt`；84 色文件不要删除，因为后续文件依赖相对色板位置。
+- `--color-order frequency|original-palette|luminance|hue`：颜色文件顺序，默认 `original-palette`，也就是 Living the Grid UI 顺序。
 - `--clean-output`：删除 `out/` 下的生成结果。
 - `--clean-cache`：删除 `.ruff_cache`、`__pycache__` 等缓存。
 
@@ -138,8 +135,7 @@ uv run tomodachi-clean
 
 ## 输出
 
-- `image_part*.txt`：普通宏脚本。
-- `color_XX_*.txt`：`--split-by-color` 模式下的单色脚本。
+- `color_XX_*.txt`：每个用到的颜色一个宏文件，需要按文件名顺序运行。
 - `preview_quantized.png`：按 JSON 还原的预览。
 - `reconstructed_from_macro.png`：按宏绘制坐标重建的图，用来检查路径计划。
 - `palette_report.csv`：颜色、H/S/B、像素数和 slot 分配。
@@ -173,8 +169,8 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 1. 进入 face paint 绘制界面。
 2. 把游戏内画笔重置为 1px。
 3. 如果使用 84 色模式，确认 84 色板起点是左下角黑色（R7C1）。如果使用全色 / HSB 模式，只需要完成 1px 画笔重置。
-4. 普通 `image_part*.txt` 需要先把画笔移动到画布左上角第一个像素。
-5. 运行宏前不要手动改变当前色板格，特别是 `--split-by-color`。
+4. 按文件名顺序运行生成的 `color_*.txt`。每个文件都会把画笔硬复位到画布起点。
+5. 生成的文件之间不要手动切换当前色板格。
 
 生成的宏会把一个 Living the Grid cell 当作一个笔刷 stamp，移动距离按 `brush.px` 放大。如果每个用到的颜色都带 `game: {row, col}`、`game: {extra}` 或 `R1·C1` 这类 label，宏会用 `Y Y L1` 打开当前色格的 84 色 Game Palette，并从左下角黑色或上一次选中的 84 色位置相对移动。否则会打开 H/S/B 选色器，并按 JSON 里的 `press.h/s/b` 调色。`color_*.txt` 会在开头硬复位到画布左上：左上推摇杆 7 秒，再向右 192、向下 77。
 
@@ -189,7 +185,6 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 - `movement_chunk_size` / `movement_chunk_settle_frames`：长距离移动时分块停顿。
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`：`color_*.txt` 开头硬复位后的回退步数。
 - `timing.canvas_reset_*`：`color_*.txt` 开头硬复位的摇杆保持和停顿时间。
-- `split_lines`：默认 part 行数。
 
 ## 参考链接
 
