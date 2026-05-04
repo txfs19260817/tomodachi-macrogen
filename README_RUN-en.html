@@ -30,7 +30,8 @@
     <li>84-color mode also requires the 84-color palette start on the lower-left black swatch (R7C1); full-color / HSB mode only requires the brush to be 1 px.</li>
     <li>For normal <code>image_part*.txt</code> output, move the brush cursor to the top-left first pixel first; <code>color_*.txt</code> starts with an automatic hard reset.</li>
     <li>Do not manually change the selected palette swatch, especially when running <code>color_*.txt</code>.</li>
-    <li>In the GUI, click Start Drawing, or send this folder's <code>image_part*.txt</code> / <code>color_*.txt</code> files in order.</li>
+    <li>In the GUI, uncheck non-84-color <code>color_*.txt</code> files to skip a color, for example a background already filled manually with the paint bucket; 84-color mode cannot skip files.</li>
+    <li>If sending non-84-color <code>color_*.txt</code> manually with the CLI / SwiCC, delete unwanted color files first, then send the remaining filenames in order.</li>
     <li>Run color-split <code>color_*.txt</code> files in file order; when resuming from the middle, first confirm the in-game 84-color palette is still on the color selected by the previous color file.</li>
   </ol>
 

@@ -86,7 +86,7 @@ tag 发布就是版本 hook：workflow 会检查 `vX.Y.Z` 是否和 `pyproject.t
 源码运行用 `uv run tomodachi-gui`，普通使用建议下载 Release 包。GUI 把 CLI 的流程
 放到一个窗口里：选择 Living the Grid JSON、生成输出、匹配手柄、发送绘图并显示进度。
 GUI 会渲染 JSON 预览图，可在独立窗口阅读本次运行说明，支持中文/英文和亮色/暗色主题，
-串口发送在后台线程执行。
+非 84 色的按颜色拆分输出可以取消勾选某个颜色文件，串口发送在后台线程执行。
 
 ![Tomodachi Macrogen GUI 截图](docs/gui-screenshot.png)
 
@@ -128,7 +128,7 @@ uv run tomodachi-clean
 - `--palette-slots N`：游戏内可用色板格数，默认 `9`。
 - `--color-order frequency|original-palette|luminance|hue`：颜色顺序，默认 `original-palette`，也就是 Living the Grid UI 顺序。
 - `--split-lines N`：每个 part 最多多少行；`0` 表示禁用切分。
-- `--split-by-color`：一个颜色一个文件，生成的颜色文件需要按顺序运行。
+- `--split-by-color`：一个颜色一个文件，生成的颜色文件需要按顺序运行。非 84 色输出里，如果某个颜色已经手动填充，可以先删除对应 `color_*.txt`；84 色文件不要删除，因为后续文件依赖相对色板位置。
 - `--clean-output`：删除 `out/` 下的生成结果。
 - `--clean-cache`：删除 `.ruff_cache`、`__pycache__` 等缓存。
 

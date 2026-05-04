@@ -1,5 +1,6 @@
 import sys
 import time
+from dataclasses import dataclass
 from html import escape
 from io import BytesIO
 from pathlib import Path
@@ -14,6 +15,22 @@ from tomodachi_macrogen import GenerationResult
 
 LIVING_THE_GRID_URL = "https://living-the-grid.com/"
 SWATCH_SIZE = 14
+FILE_TABLE_USE_COLUMN = 0
+FILE_TABLE_COLOR_COLUMN = 1
+FILE_TABLE_FILE_COLUMN = 2
+FILE_TABLE_PIXELS_COLUMN = 3
+FILE_TABLE_LINES_COLUMN = 4
+FILE_TABLE_COLUMNS = 5
+
+
+@dataclass(frozen=True)
+class MacroFileInfo:
+    path: Path
+    color_hex: str | None = None
+    palette_source: str | None = None
+    pixel_count: int | None = None
+    line_count: int | None = None
+    frame_count: int | None = None
 
 
 def build_part_color_map(manifest: dict[str, object]) -> dict[str, str]:
@@ -37,11 +54,69 @@ def is_hex_color(value: object) -> bool:
     return all(character in "0123456789abcdefABCDEF" for character in value[1:])
 
 
+def build_macro_file_infos(
+    macro_files: list[Path],
+    manifest: dict[str, object],
+) -> list[MacroFileInfo]:
+    parts_by_name = build_part_info_map(manifest)
+    infos: list[MacroFileInfo] = []
+    for path in macro_files:
+        part = parts_by_name.get(path.name, {})
+        color_hex = part.get("hex")
+        infos.append(
+            MacroFileInfo(
+                path=path,
+                color_hex=color_hex.upper() if is_hex_color(color_hex) else None,
+                palette_source=optional_string(part.get("palette_source")),
+                pixel_count=optional_int(part.get("pixel_count")),
+                line_count=optional_int(part.get("line_count")),
+                frame_count=optional_int(part.get("frame_count")),
+            )
+        )
+    return infos
+
+
+def build_part_info_map(manifest: dict[str, object]) -> dict[str, dict[str, object]]:
+    parts: dict[str, dict[str, object]] = {}
+    raw_parts = manifest.get("parts", [])
+    if not isinstance(raw_parts, list):
+        return parts
+    for raw_part in raw_parts:
+        if not isinstance(raw_part, dict):
+            continue
+        file_name = raw_part.get("file")
+        if isinstance(file_name, str):
+            parts[Path(file_name).name] = raw_part
+    return parts
+
+
+def optional_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def optional_string(value: object) -> str | None:
+    return value if isinstance(value, str) else None
+
+
+def is_macro_file_skip_allowed(manifest: dict[str, object]) -> bool:
+    return manifest.get("split_strategy") == "color" and manifest.get("palette_source") != "game"
+
+
 def main() -> int:
     try:
         from PyQt6.QtCore import QObject, Qt, QThread, QUrl
-        from PyQt6.QtGui import QActionGroup, QDesktopServices, QFont, QPixmap
+        from PyQt6.QtGui import QActionGroup, QColor, QDesktopServices, QFont, QPixmap
         from PyQt6.QtWidgets import (
+            QAbstractItemView,
             QApplication,
             QCheckBox,
             QComboBox,
@@ -53,12 +128,13 @@ def main() -> int:
             QHBoxLayout,
             QLabel,
             QLineEdit,
-            QListWidget,
             QMainWindow,
             QMessageBox,
             QProgressBar,
             QPushButton,
             QSizePolicy,
+            QTableWidget,
+            QTableWidgetItem,
             QTextBrowser,
             QVBoxLayout,
             QWidget,
@@ -83,6 +159,8 @@ def main() -> int:
             self.current_theme = "light"
             self.link_color = "#21666c"
             self.current_file_colors: dict[str, str] = {}
+            self.macro_file_infos: list[MacroFileInfo] = []
+            self.macro_file_skip_allowed = False
             self.threads: list[QThread] = []
             self.workers: list[QObject] = []
             self.readme_windows: list[QDialog] = []
@@ -206,13 +284,18 @@ def main() -> int:
             self.current_file_label.setObjectName("Muted")
             current_file_row.addWidget(self.current_file_swatch)
             current_file_row.addWidget(self.current_file_label, 1)
-            self.file_list = QListWidget()
-            self.file_list.setMinimumHeight(92)
-            self.file_list.setMaximumHeight(150)
-            self.file_list.setSizePolicy(
+            self.file_table = QTableWidget(0, FILE_TABLE_COLUMNS)
+            self.file_table.setMinimumHeight(116)
+            self.file_table.setMaximumHeight(190)
+            self.file_table.setSizePolicy(
                 QSizePolicy.Policy.Expanding,
                 QSizePolicy.Policy.Fixed,
             )
+            self.file_table.verticalHeader().setVisible(False)
+            self.file_table.setAlternatingRowColors(True)
+            self.file_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+            self.file_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+            self.file_table.itemChanged.connect(lambda _item: self.update_draw_button_enabled())
             self.draw_button = QPushButton()
             self.draw_button.setObjectName("PrimaryButton")
             self.draw_button.clicked.connect(self.start_draw)
@@ -228,7 +311,7 @@ def main() -> int:
             button_row.addWidget(self.draw_button, 1)
             button_row.addWidget(self.cancel_draw_button)
             draw_layout.addLayout(current_file_row)
-            draw_layout.addWidget(self.file_list)
+            draw_layout.addWidget(self.file_table)
             draw_layout.addLayout(button_row)
             right_layout.addWidget(self.draw_group)
 
@@ -313,6 +396,7 @@ def main() -> int:
             self.refresh_button.setText(tr("serial.refresh"))
             self.match_button.setText(tr("serial.match"))
             self.draw_group.setTitle(tr("draw.group"))
+            self.update_file_table_headers()
             self.draw_button.setText(tr("draw.button"))
             self.open_readme_button.setText(tr("draw.open_readme"))
             self.open_readme_button.setToolTip(tr("draw.open_readme_tooltip"))
@@ -323,6 +407,17 @@ def main() -> int:
             self.update_current_file_label()
             self.update_meta_label()
             self.update_status_label()
+
+        def update_file_table_headers(self) -> None:
+            self.file_table.setHorizontalHeaderLabels(
+                [
+                    tr("draw.file_use"),
+                    tr("draw.file_color"),
+                    tr("draw.file_name"),
+                    tr("draw.file_pixels"),
+                    tr("draw.file_lines"),
+                ]
+            )
 
         def update_living_grid_link(self) -> None:
             label = escape(tr("generate.open_living_grid"))
@@ -497,11 +592,14 @@ def main() -> int:
                     raise TypeError(f"unexpected generation result: {type(result).__name__}")
                 self.result = result
                 self.current_file_colors = build_part_color_map(result.manifest)
-                self.file_list.clear()
+                self.macro_file_infos = build_macro_file_infos(
+                    result.macro_files,
+                    result.manifest,
+                )
+                self.macro_file_skip_allowed = is_macro_file_skip_allowed(result.manifest)
+                self.populate_file_table()
                 self.current_file_label.setText(tr("draw.current_file"))
                 self.clear_current_file_swatch()
-                for path in self.result.macro_files:
-                    self.file_list.addItem(str(path))
                 self.set_preview_from_file(self.result.preview_path)
                 self.preview_info = None
                 self.generation_info = {
@@ -524,6 +622,73 @@ def main() -> int:
                     self.set_preview_image(image)
             except Exception:
                 return
+
+        def populate_file_table(self) -> None:
+            self.file_table.blockSignals(True)
+            try:
+                self.file_table.setRowCount(0)
+                for row, info in enumerate(self.macro_file_infos):
+                    self.file_table.insertRow(row)
+                    skippable = (
+                        self.macro_file_skip_allowed
+                        and info.color_hex is not None
+                        and info.palette_source != "game"
+                    )
+                    tooltip = self.file_row_tooltip(skippable, info)
+
+                    use_item = self.readonly_table_item("")
+                    use_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    use_item.setCheckState(Qt.CheckState.Checked)
+                    use_flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+                    if skippable:
+                        use_flags |= Qt.ItemFlag.ItemIsUserCheckable
+                    use_item.setFlags(use_flags)
+                    use_item.setToolTip(tooltip)
+                    self.file_table.setItem(row, FILE_TABLE_USE_COLUMN, use_item)
+
+                    color_item = self.readonly_table_item(info.color_hex or "-")
+                    if info.color_hex is not None:
+                        color_item.setBackground(QColor(info.color_hex))
+                    color_item.setToolTip(tooltip)
+                    self.file_table.setItem(row, FILE_TABLE_COLOR_COLUMN, color_item)
+
+                    file_item = self.readonly_table_item(info.path.name)
+                    file_item.setData(Qt.ItemDataRole.UserRole, str(info.path))
+                    file_item.setToolTip(str(info.path))
+                    self.file_table.setItem(row, FILE_TABLE_FILE_COLUMN, file_item)
+
+                    pixel_item = self.readonly_table_item(self.format_table_count(info.pixel_count))
+                    pixel_item.setToolTip(tooltip)
+                    self.file_table.setItem(row, FILE_TABLE_PIXELS_COLUMN, pixel_item)
+
+                    line_item = self.readonly_table_item(self.format_table_count(info.line_count))
+                    line_item.setToolTip(tooltip)
+                    self.file_table.setItem(row, FILE_TABLE_LINES_COLUMN, line_item)
+                self.file_table.resizeColumnsToContents()
+                self.file_table.horizontalHeader().setStretchLastSection(True)
+            finally:
+                self.file_table.blockSignals(False)
+            self.update_draw_button_enabled()
+
+        def file_row_tooltip(self, skippable: bool, info: MacroFileInfo) -> str:
+            if skippable:
+                return tr("draw.skip_allowed_tooltip")
+            if (
+                info.palette_source == "game"
+                or self.result is not None
+                and self.result.manifest.get("palette_source") == "game"
+            ):
+                return tr("draw.skip_forbidden_84_tooltip")
+            return tr("draw.skip_forbidden_parts_tooltip")
+
+        def readonly_table_item(self, text: str) -> QTableWidgetItem:
+            item = QTableWidgetItem(text)
+            item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+            return item
+
+        @staticmethod
+        def format_table_count(value: int | None) -> str:
+            return "-" if value is None else str(value)
 
         def start_match(self) -> None:
             port = self.selected_port()
@@ -557,9 +722,19 @@ def main() -> int:
             self.set_status("status.cancelling")
 
         def current_macro_files(self) -> list[Path]:
-            if self.result is not None:
-                return self.result.macro_files
-            return []
+            if self.result is None:
+                return []
+            files: list[Path] = []
+            for row in range(self.file_table.rowCount()):
+                use_item = self.file_table.item(row, FILE_TABLE_USE_COLUMN)
+                file_item = self.file_table.item(row, FILE_TABLE_FILE_COLUMN)
+                if use_item is None or file_item is None:
+                    continue
+                if use_item.checkState() != Qt.CheckState.Checked:
+                    continue
+                raw_path = file_item.data(Qt.ItemDataRole.UserRole)
+                files.append(Path(str(raw_path)))
+            return files
 
         def start_transfer(
             self,
@@ -685,6 +860,7 @@ def main() -> int:
         def set_busy(self, busy: bool, status_key: str) -> None:
             self.generate_button.setDisabled(busy)
             self.match_button.setDisabled(busy)
+            self.file_table.setDisabled(busy)
             self.update_draw_button_enabled(force_disabled=busy)
             self.cancel_draw_button.setEnabled(
                 busy
@@ -694,7 +870,7 @@ def main() -> int:
             self.set_status(status_key)
 
         def update_draw_button_enabled(self, *, force_disabled: bool = False) -> None:
-            has_files = self.result is not None and bool(self.result.macro_files)
+            has_files = self.result is not None and bool(self.current_macro_files())
             enabled = has_files and not force_disabled
             self.draw_button.setEnabled(enabled)
             self.draw_button.setToolTip(

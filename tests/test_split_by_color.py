@@ -34,6 +34,9 @@ class TestSplitByColor(unittest.TestCase):
             self.assertEqual(manifest["split_strategy"], "color")
             self.assertEqual(len(manifest["parts"]), manifest["palette_color_count"])
             self.assertTrue(all(part["assigned_slot"] == 0 for part in manifest["parts"]))
+            self.assertTrue(
+                all(part["palette_source"] in {"game", "hsb"} for part in manifest["parts"])
+            )
             self.assertFalse(list(out_dir.glob("image_part*.txt")))
             self.assertEqual(
                 len(list(out_dir.glob("color_*.txt"))),

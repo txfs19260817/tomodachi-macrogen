@@ -723,6 +723,7 @@ def write_color_parts(
                 "color_index": color.color_index,
                 "hex": entry.hex,
                 "pixel_count": color.pixel_count,
+                "palette_source": "game" if entry.game is not None else "hsb",
                 "assigned_slot": 0,
             }
         )

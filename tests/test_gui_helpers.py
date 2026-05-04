@@ -1,4 +1,11 @@
-from tomodachi_gui import build_part_color_map, is_hex_color
+from pathlib import Path
+
+from tomodachi_gui import (
+    build_macro_file_infos,
+    build_part_color_map,
+    is_hex_color,
+    is_macro_file_skip_allowed,
+)
 
 
 def test_build_part_color_map_uses_color_split_part_hex_values() -> None:
@@ -22,3 +29,50 @@ def test_is_hex_color_requires_rrggbb_hash_format() -> None:
     assert not is_hex_color("A1b2C3")
     assert not is_hex_color("#12345")
     assert not is_hex_color("#12345Z")
+
+
+def test_build_macro_file_infos_joins_manifest_part_metadata() -> None:
+    paths = [
+        Path("out/color_01_FFFFFF.txt"),
+        Path("out/color_02_000000.txt"),
+        Path("out/image_part1.txt"),
+    ]
+    manifest = {
+        "parts": [
+            {
+                "file": "color_01_FFFFFF.txt",
+                "hex": "#ffffff",
+                "palette_source": "hsb",
+                "pixel_count": 30,
+                "line_count": 12,
+                "frame_count": 300,
+            },
+            {
+                "file": "color_02_000000.txt",
+                "hex": "#000000",
+                "palette_source": "game",
+                "pixel_count": "20",
+                "line_count": "8",
+                "frame_count": "200",
+            },
+        ]
+    }
+
+    infos = build_macro_file_infos(paths, manifest)
+
+    assert infos[0].color_hex == "#FFFFFF"
+    assert infos[0].palette_source == "hsb"
+    assert infos[0].pixel_count == 30
+    assert infos[0].line_count == 12
+    assert infos[1].color_hex == "#000000"
+    assert infos[1].palette_source == "game"
+    assert infos[1].pixel_count == 20
+    assert infos[1].frame_count == 200
+    assert infos[2].color_hex is None
+    assert infos[2].pixel_count is None
+
+
+def test_macro_file_skip_is_allowed_only_for_non_84_color_split_output() -> None:
+    assert is_macro_file_skip_allowed({"split_strategy": "color", "palette_source": "auto"})
+    assert not is_macro_file_skip_allowed({"split_strategy": "color", "palette_source": "game"})
+    assert not is_macro_file_skip_allowed({"split_strategy": "lines", "palette_source": "auto"})

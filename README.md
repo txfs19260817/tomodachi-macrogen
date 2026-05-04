@@ -91,7 +91,8 @@ Run `uv run tomodachi-gui` from source, or use the Release build. The GUI provid
 same workflow as the CLI: choose a Living the Grid JSON, generate output, pair the
 controller, then send the generated files while showing progress. It renders the JSON
 preview, can show the generated run instructions in a separate window, supports
-Chinese/English plus light/dark themes, and keeps serial work in a background thread.
+Chinese/English plus light/dark themes, lets non-84-color split outputs skip selected
+color files, and keeps serial work in a background thread.
 
 ![Tomodachi Macrogen GUI screenshot](docs/gui-screenshot.png)
 
@@ -133,7 +134,9 @@ Output always goes to `out/<input-name>-<timestamp>/`.
 - `--palette-slots N`: available in-game palette slots, default `9`.
 - `--color-order frequency|original-palette|luminance|hue`: color order, default `original-palette`, matching Living the Grid UI order.
 - `--split-lines N`: max lines per part; `0` disables splitting.
-- `--split-by-color`: one file per color; run the generated color files in order.
+- `--split-by-color`: one file per color; run the generated color files in order. For
+  non-84-color output, delete a `color_*.txt` first if that color was filled manually.
+  Do not delete 84-color files because later files depend on relative palette position.
 - `--clean-output`: delete generated outputs under `out/`.
 - `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
 

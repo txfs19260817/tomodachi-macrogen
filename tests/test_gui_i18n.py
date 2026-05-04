@@ -16,6 +16,7 @@ class TestGuiI18n(unittest.TestCase):
         self.assertEqual(tr("draw.open_readme"), "Read Run Instructions")
         self.assertEqual(tr("dialog.close"), "Close")
         self.assertEqual(tr("draw.cancel"), "Cancel")
+        self.assertEqual(tr("draw.file_use"), "Send")
 
     def test_gui_translation_formats_preview_meta(self) -> None:
         configure_i18n("en")

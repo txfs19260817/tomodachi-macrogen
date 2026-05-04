@@ -15,7 +15,8 @@
 2. 84-color mode also requires the 84-color palette start on the lower-left black swatch (R7C1); full-color / HSB mode only requires the brush to be 1 px.
 3. For normal `image_part*.txt` output, move the brush cursor to the top-left first pixel first; `color_*.txt` starts with an automatic hard reset.
 4. Do not manually change the selected palette swatch, especially when running `color_*.txt`.
-5. In the GUI, click Start Drawing, or send this folder's `image_part*.txt` / `color_*.txt` files in order.
-6. Run color-split `color_*.txt` files in file order; when resuming from the middle, first confirm the in-game 84-color palette is still on the color selected by the previous color file.
+5. In the GUI, uncheck non-84-color `color_*.txt` files to skip a color, for example a background already filled manually with the paint bucket; 84-color mode cannot skip files.
+6. If sending non-84-color `color_*.txt` manually with the CLI / SwiCC, delete unwanted color files first, then send the remaining filenames in order.
+7. Run color-split `color_*.txt` files in file order; when resuming from the middle, first confirm the in-game 84-color palette is still on the color selected by the previous color file.
 
 If JSON colors include default 84-color palette coordinates, the macro enters the 84-color Game Palette with `Y Y L1`, then moves relative to the lower-left black swatch or the last selected 84-color position. Other colors use the HSB picker with JSON `press.h/s/b` values.

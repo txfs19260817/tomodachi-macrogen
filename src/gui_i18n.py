@@ -47,6 +47,14 @@ TRANSLATIONS = {
         "draw.enabled_tooltip": "发送当前生成的绘图文件。",
         "draw.current_file": "当前文件：-",
         "draw.current_file_detail": "当前文件：%index / %total · %name",
+        "draw.file_use": "发送",
+        "draw.file_color": "颜色",
+        "draw.file_name": "文件",
+        "draw.file_pixels": "像素",
+        "draw.file_lines": "行数",
+        "draw.skip_allowed_tooltip": "取消勾选可跳过这个颜色文件，例如已手动用油漆桶填充背景色。",
+        "draw.skip_forbidden_84_tooltip": "84 色模式不允许跳过，避免后续相对色板位置错误。",
+        "draw.skip_forbidden_parts_tooltip": "普通分片必须全部发送。",
         "file_dialog.json_title": "选择 Living the Grid JSON",
         "file_dialog.json_filter": "JSON 文件 (*.json)",
         "status.ready": "Ready",
@@ -123,6 +131,18 @@ TRANSLATIONS = {
         "draw.enabled_tooltip": "Send the currently generated drawing files.",
         "draw.current_file": "Current file: -",
         "draw.current_file_detail": "Current file: %index / %total · %name",
+        "draw.file_use": "Send",
+        "draw.file_color": "Color",
+        "draw.file_name": "File",
+        "draw.file_pixels": "Pixels",
+        "draw.file_lines": "Lines",
+        "draw.skip_allowed_tooltip": (
+            "Uncheck to skip this color file, for example when the background was filled manually."
+        ),
+        "draw.skip_forbidden_84_tooltip": (
+            "84-color mode cannot skip files because later colors use relative palette navigation."
+        ),
+        "draw.skip_forbidden_parts_tooltip": "Normal macro parts must all be sent.",
         "file_dialog.json_title": "Choose Living the Grid JSON",
         "file_dialog.json_filter": "JSON files (*.json)",
         "status.ready": "Ready",

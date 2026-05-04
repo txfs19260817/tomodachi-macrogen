@@ -19,9 +19,13 @@ def test_run_readme_markdown_and_html_keep_user_sections() -> None:
     assert "把画笔重置为 1px" in zh_md
     assert "左下角黑色（R7C1）" in zh_md
     assert "全色 / HSB 模式只需要画笔是 1px" in zh_md
+    assert "84 色模式不允许跳过" in zh_md
+    assert "可以先删除不想发送的颜色文件" in zh_md
     assert "reset the brush to 1 px" in en_md
     assert "lower-left black swatch (R7C1)" in en_md
     assert "full-color / HSB mode only requires the brush to be 1 px" in en_md
+    assert "84-color mode cannot skip files" in en_md
+    assert "delete unwanted color files first" in en_md
 
 
 def test_bundled_data_files_include_all_run_readmes() -> None:

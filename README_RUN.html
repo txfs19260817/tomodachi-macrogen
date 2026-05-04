@@ -30,7 +30,8 @@
     <li>84 色模式还需要确认 84 色板起点是左下角黑色（R7C1）；全色 / HSB 模式只需要画笔是 1px。</li>
     <li>普通 <code>image_part*.txt</code> 输出需要先把画笔移动到画布左上角第一个像素；<code>color_*.txt</code> 会在开头自动硬复位。</li>
     <li>不要手动切换当前色板格，特别是运行 <code>color_*.txt</code> 时。</li>
-    <li>在 GUI 里点“开始绘画”，或按顺序发送本目录里的 <code>image_part*.txt</code> / <code>color_*.txt</code>。</li>
+    <li>在 GUI 里可以取消勾选非 84 色的 <code>color_*.txt</code> 来跳过某个颜色，例如已经手动用油漆桶填充的背景色；84 色模式不允许跳过。</li>
+    <li>如果手动用 CLI / SwiCC 发送非 84 色 <code>color_*.txt</code>，可以先删除不想发送的颜色文件，再按剩余文件名顺序发送。</li>
     <li>按颜色拆分的 <code>color_*.txt</code> 需要按文件顺序运行；如果从中间恢复，先确认游戏里的 84 色板仍停在上一个颜色文件选中的颜色。</li>
   </ol>
 

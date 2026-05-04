@@ -2,6 +2,16 @@
 
 All notable changes to this project are generated from Git history by git-cliff.
 
+## Unreleased
+
+### Features
+- Skip non-84 color files in GUI
+
+
+### Build and Maintenance
+- Enforce conventional commits locally
+
+
 ## [1.0.2] - 2026-05-04
 
 ### Legacy Changes
