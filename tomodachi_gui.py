@@ -9,7 +9,7 @@ from PIL import Image
 
 from src.gui_i18n import LOCALE_OPTIONS, configure_i18n, current_locale, set_locale, tr
 from src.gui_theme import build_theme_style
-from src.resources import RUN_README_EN_HTML, RUN_README_HTML
+from src.resources import APP_ICON, RUN_README_EN_HTML, RUN_README_HTML
 from swicc_runner import TransferProgress, import_serial_tools
 from tomodachi_macrogen import GenerationResult
 
@@ -114,7 +114,7 @@ def is_macro_file_skip_allowed(manifest: dict[str, object]) -> bool:
 def main() -> int:
     try:
         from PyQt6.QtCore import QObject, Qt, QThread, QUrl
-        from PyQt6.QtGui import QActionGroup, QColor, QDesktopServices, QFont, QPixmap
+        from PyQt6.QtGui import QActionGroup, QColor, QDesktopServices, QFont, QIcon, QPixmap
         from PyQt6.QtWidgets import (
             QAbstractItemView,
             QApplication,
@@ -324,6 +324,8 @@ def main() -> int:
             app = QApplication.instance()
             if app is not None:
                 app.setFont(QFont("Segoe UI Variable", 10))
+                app.setWindowIcon(QIcon(str(APP_ICON)))
+            self.setWindowIcon(QIcon(str(APP_ICON)))
             self.retranslate_ui()
             self.apply_theme("light")
 

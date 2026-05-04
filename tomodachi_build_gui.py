@@ -7,6 +7,7 @@ from src.resources import BUNDLED_DATA_FILES
 
 ROOT = Path(__file__).resolve().parent
 DATA_FILES = BUNDLED_DATA_FILES
+APP_ICON = ROOT / "assets" / "app-icon.png"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -38,6 +39,8 @@ def main() -> int:
         "--windowed",
         "--name",
         "tomodachi-gui",
+        "--icon",
+        str(APP_ICON),
     ]
     for relative_path in DATA_FILES:
         args.extend(["--add-data", f"{ROOT / relative_path}{os.pathsep}."])

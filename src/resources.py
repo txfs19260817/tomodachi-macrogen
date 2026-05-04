@@ -10,6 +10,7 @@ RUN_README_TEMPLATE = RESOURCE_ROOT / "README_RUN.template.md"
 RUN_README_EN_TEMPLATE = RESOURCE_ROOT / "README_RUN-en.template.md"
 RUN_README_HTML = RESOURCE_ROOT / "README_RUN.html"
 RUN_README_EN_HTML = RESOURCE_ROOT / "README_RUN-en.html"
+APP_ICON = RESOURCE_ROOT / "assets" / "app-icon.png"
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,6 @@ RUN_README_OUTPUTS = (
     BundledResource("README_RUN-en.html", "README_RUN-en.html"),
 )
 
-BUNDLED_DATA_FILES = ("config.default.json",) + tuple(
+BUNDLED_DATA_FILES = ("config.default.json", "assets/app-icon.png") + tuple(
     resource.relative_path for resource in RUN_README_OUTPUTS
 )

@@ -5,6 +5,7 @@ All notable changes to this project are generated from Git history by git-cliff.
 ## Unreleased
 
 ### Features
+- Add GUI app icon
 - Skip non-84 color files in GUI
 
 

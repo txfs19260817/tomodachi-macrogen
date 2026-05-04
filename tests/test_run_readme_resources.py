@@ -1,4 +1,4 @@
-from src.resources import BUNDLED_DATA_FILES, RUN_README_OUTPUTS, SOURCE_ROOT
+from src.resources import APP_ICON, BUNDLED_DATA_FILES, RUN_README_OUTPUTS, SOURCE_ROOT
 from tomodachi_build_gui import DATA_FILES
 
 
@@ -31,3 +31,8 @@ def test_run_readme_markdown_and_html_keep_user_sections() -> None:
 def test_bundled_data_files_include_all_run_readmes() -> None:
     assert DATA_FILES == BUNDLED_DATA_FILES
     assert {resource.relative_path for resource in RUN_README_OUTPUTS} <= set(DATA_FILES)
+
+
+def test_bundled_data_files_include_app_icon() -> None:
+    assert APP_ICON.exists()
+    assert "assets/app-icon.png" in DATA_FILES
