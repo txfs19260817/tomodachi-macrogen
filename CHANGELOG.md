@@ -9,6 +9,10 @@ All notable changes to this project are generated from Git history by git-cliff.
 - Skip non-84 color files in GUI
 
 
+### Fixes
+- Render light table and packaged icon
+
+
 ### Refactoring
 - Remove legacy split modes
 

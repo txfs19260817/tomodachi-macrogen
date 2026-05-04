@@ -1,13 +1,18 @@
 import argparse
 import os
 import shutil
+import sys
 from pathlib import Path
 
 from src.resources import BUNDLED_DATA_FILES
 
 ROOT = Path(__file__).resolve().parent
 DATA_FILES = BUNDLED_DATA_FILES
-APP_ICON = ROOT / "assets" / "app-icon.png"
+APP_ICON = (
+    ROOT / "assets" / "app-icon.ico"
+    if sys.platform == "win32"
+    else ROOT / "assets" / "app-icon.png"
+)
 
 
 def build_parser() -> argparse.ArgumentParser:

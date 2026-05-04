@@ -1,4 +1,7 @@
+import sys
+
 from src.resources import APP_ICON, BUNDLED_DATA_FILES, RUN_README_OUTPUTS, SOURCE_ROOT
+from tomodachi_build_gui import APP_ICON as BUILD_ICON
 from tomodachi_build_gui import DATA_FILES
 
 
@@ -36,3 +39,9 @@ def test_bundled_data_files_include_all_run_readmes() -> None:
 def test_bundled_data_files_include_app_icon() -> None:
     assert APP_ICON.exists()
     assert "assets/app-icon.png" in DATA_FILES
+
+
+def test_build_icon_uses_native_windows_icon() -> None:
+    assert BUILD_ICON.exists()
+    expected_suffix = ".ico" if sys.platform == "win32" else ".png"
+    assert BUILD_ICON.suffix == expected_suffix

@@ -97,6 +97,47 @@ def build_theme_style(theme: str) -> ThemeStyle:
             selection-background-color: {colors["primary"]};
             selection-color: {colors["primary_text"]};
         }}
+        QTableWidget, QTableView {{
+            background: {colors["field"]};
+            alternate-background-color: {colors["table_alt"]};
+            border: 1px solid {colors["field_border"]};
+            border-radius: 8px;
+            color: {colors["text"]};
+            gridline-color: {colors["table_grid"]};
+            selection-background-color: {colors["primary"]};
+            selection-color: {colors["primary_text"]};
+        }}
+        QTableWidget::viewport, QTableView::viewport {{
+            background: {colors["field"]};
+        }}
+        QTableWidget::item, QTableView::item {{
+            color: {colors["text"]};
+            padding: 3px 6px;
+        }}
+        QTableWidget::item:selected, QTableView::item:selected {{
+            background: {colors["primary"]};
+            color: {colors["primary_text"]};
+        }}
+        QHeaderView::section {{
+            background: {colors["table_header"]};
+            border: 0;
+            border-right: 1px solid {colors["table_grid"]};
+            border-bottom: 1px solid {colors["field_border"]};
+            color: {colors["text"]};
+            font-weight: 700;
+            padding: 5px 7px;
+        }}
+        QTableCornerButton::section {{
+            background: {colors["table_header"]};
+            border: 0;
+            border-right: 1px solid {colors["table_grid"]};
+            border-bottom: 1px solid {colors["field_border"]};
+        }}
+        QTableWidget:disabled, QTableView:disabled {{
+            background: {colors["button_disabled"]};
+            color: {colors["disabled_text"]};
+            gridline-color: {colors["field_border"]};
+        }}
         QPushButton {{
             background: {colors["button"]};
             border: 1px solid {colors["button_border"]};
@@ -142,6 +183,9 @@ _DARK_COLORS = {
     "muted": "#b7aa98",
     "field": "#151b1d",
     "field_border": "#4b5b60",
+    "table_alt": "#1b2225",
+    "table_grid": "#3d4b50",
+    "table_header": "#293337",
     "button": "#344247",
     "button_hover": "#415258",
     "button_border": "#5a6d73",
@@ -163,6 +207,9 @@ _LIGHT_COLORS = {
     "muted": "#796b5a",
     "field": "#fffdf8",
     "field_border": "#d2bea0",
+    "table_alt": "#f6eddc",
+    "table_grid": "#dac7a8",
+    "table_header": "#ead9bd",
     "button": "#ead9bd",
     "button_hover": "#f2e3cb",
     "button_border": "#c8ad85",
