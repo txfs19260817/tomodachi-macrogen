@@ -4,7 +4,7 @@ Convert [Living the Grid](https://living-the-grid.com/) JSON exports into SwiCC 
 
 Use it to generate drawing macros from a Living the Grid per-pixel JSON export, then optionally pair and send those macros through a SwiCC controller bridge.
 
-中文文档见 [README-zh.md](README-zh.md)。
+中文文档见 [README-zh.md](README-zh.md)。Changelog: [CHANGELOG.md](CHANGELOG.md).
 
 ## Download
 
@@ -41,6 +41,18 @@ Development checks:
 uv sync --group dev --group test
 uv run ruff check .
 uv run pytest -n auto tests
+```
+
+Update the changelog after release-facing changes:
+
+```bash
+uv run --group dev git-cliff --config pyproject.toml --output CHANGELOG.md
+```
+
+Preview only unreleased changes:
+
+```bash
+uv run --group dev git-cliff --config pyproject.toml --unreleased
 ```
 
 ## Build Portable GUI Locally

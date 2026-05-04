@@ -4,7 +4,7 @@
 
 从 Living the Grid 的 per-pixel JSON 导出生成绘图宏，并可通过 SwiCC 手柄桥接器完成匹配和发送。
 
-English documentation: [README.md](README.md).
+English documentation: [README.md](README.md). 更新记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 下载
 
@@ -40,6 +40,18 @@ uv sync
 uv sync --group dev --group test
 uv run ruff check .
 uv run pytest -n auto tests
+```
+
+有面向发布的改动后，更新 changelog：
+
+```bash
+uv run --group dev git-cliff --config pyproject.toml --output CHANGELOG.md
+```
+
+只预览尚未发布的改动：
+
+```bash
+uv run --group dev git-cliff --config pyproject.toml --unreleased
 ```
 
 ## 本地构建 Portable GUI
