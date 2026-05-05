@@ -4,6 +4,12 @@ All notable changes to this project are generated from Git history by git-cliff.
 
 ## Unreleased
 
+### Documentation
+- Streamline user and developer guides
+
+
+## [1.0.4] - 2026-05-05
+
 ### Features
 - Add adaptive path planning benchmarks
 

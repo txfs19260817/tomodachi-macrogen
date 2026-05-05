@@ -1,8 +1,7 @@
 # tomodachi-macrogen
 
-Convert [Living the Grid](https://living-the-grid.com/) JSON exports into SwiCC `.txt` macros for Tomodachi Life face paint automation.
-
-Use it to generate drawing macros from a Living the Grid per-pixel JSON export, then optionally pair and send those macros through a SwiCC controller bridge.
+Convert [Living the Grid](https://living-the-grid.com/) JSON exports into SwiCC `.txt`
+macros for Tomodachi Life face paint automation.
 
 中文文档见 [README-zh.md](README-zh.md)。Changelog: [CHANGELOG.md](CHANGELOG.md).
 
@@ -19,7 +18,7 @@ Download the latest asset for your platform, extract it, then run:
 No installer is produced. The artifacts are unsigned, so Windows/macOS may show the
 usual first-run warning.
 
-## GUI Workflow
+## Basic Workflow
 
 1. Upload an image to Living the Grid.
 2. Select `square`, `smooth`, one of `1px / 3px / 7px / 13px / 19px / 27px`, and the `game` palette.
@@ -28,7 +27,117 @@ usual first-run warning.
 5. Open `tomodachi-gui`, choose the JSON, and generate macros.
 6. Pick the serial port, pair the controller if needed, then start drawing.
 
-## Install
+![Tomodachi Macrogen GUI screenshot](docs/gui-screenshot.png)
+
+## In-Game Checklist
+
+Before running generated files:
+
+1. Open the Tomodachi Life face paint drawing screen.
+2. Reset the in-game brush to `1 px`.
+3. For 84-color mode, confirm the 84-color palette starts on the lower-left black swatch (`R7C1`). For full-color / HSB mode, the brush reset is enough.
+4. Run generated `color_*.txt` files in filename order.
+5. Do not manually change the selected palette swatch between generated files.
+
+For non-84-color output, you may uncheck generated files in the GUI to skip colors you
+already filled manually, such as a background color. 84-color output cannot skip files
+because palette navigation depends on the previous selected color.
+
+Each `color_*.txt` starts by hard-resetting the brush cursor to the canvas start. If
+the JSON colors include 84-color palette coordinates, the macro opens the 84-color
+Game Palette with `Y Y L1` and moves from the lower-left black swatch or the previous
+84-color position. Other colors use the HSB picker with JSON `press.h/s/b` values.
+
+## Hardware Setup
+
+Firmware:
+
+- SwiCC_RP2040: <https://github.com/knflrpn/SwiCC_RP2040/releases>
+- UART bridge: <https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2>
+
+To flash UF2, hold `BOOTSEL` while plugging USB, then copy the matching `.uf2` to the
+`RPI-RP2` drive. Enable Pro Controller Wired Communication in Switch system settings.
+
+- Board A plugs into the Switch / Dock and runs the SwiCC_RP2040 main firmware.
+- Board B plugs into the computer and runs `SwiCC_UART_Bridge.uf2`.
+- Board A GPIO0/TX connects to Board B GPIO1/RX.
+- Board A GPIO1/RX connects to Board B GPIO0/TX.
+- Board A GND connects to Board B GND.
+- Do not connect 5V or 3V3 between boards.
+- For Waveshare RP2040-Zero, wire by GPIO labels, not guessed physical position.
+
+![Waveshare RP2040-Zero pinout](https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg)
+
+## Outputs
+
+Generated output is written to `out/<input-name>-<timestamp>/`.
+
+- `color_XX_*.txt`: one macro per used color, in the order they should run.
+- `preview_quantized.png`: preview reconstructed from JSON.
+- `reconstructed_from_macro.png`: image reconstructed from generated draw coordinates.
+- `palette_report.csv`: colors, H/S/B values, pixel counts, and slot assignment.
+- `manifest.json`: generation summary.
+- `config_used.json`: merged runtime config.
+- `README_RUN.md` / `README_RUN-en.md`: run instructions.
+
+## CLI
+
+The GUI is recommended for normal use. The CLI is useful for automation or manual SwiCC
+file transfer.
+
+Common commands:
+
+```bash
+# List serial ports
+uv run tomodachi-macrogen --list-ports
+
+# Generate, pair the controller, then draw
+uv run tomodachi-macrogen input.json --port COM5
+
+# Only pair the controller
+uv run tomodachi-macrogen --port COM5 --match-controller
+
+# Generate files for later use
+uv run tomodachi-macrogen input.json
+
+# Clean generated outputs and caches
+uv run tomodachi-clean
+```
+
+Options:
+
+- `input`: Living the Grid JSON.
+- `--port COM5`: generate, pair, and draw through the selected serial port.
+- `--list-ports`: list available serial ports.
+- `--match-controller`: with no input, run the controller pairing step by itself.
+- `--config CONFIG`: extra config JSON overriding `config.default.json`.
+- `--color-order frequency|original-palette|luminance|hue`: color file order, default `original-palette`.
+- `--diagonal-movement`: experimental D-pad diagonal movement for canvas travel.
+- `--clean-output`: delete generated outputs under `out/`.
+- `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
+
+When sending generated files manually, delete unwanted `color_*.txt` files to skip
+non-84-color colors you already filled. Do not delete or skip files for 84-color output.
+
+For each color, the generator dry-runs nearest-run, row-snake, and bounded TSP/2-opt
+drawing paths, then writes the fastest one.
+
+## Config
+
+Defaults live in `config.default.json`. Current defaults are conservative to avoid
+missed inputs on hardware.
+
+Common tuning fields:
+
+- `timing.*`: button, movement, and menu waits.
+- `game_palette_*`: Game Palette navigation dimensions and timing.
+- `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
+- `enable_diagonal_movement`: experimental combined D-pad movement; leave off unless it is stable on your hardware.
+- `path_tsp_max_runs`: maximum horizontal runs for the bounded TSP/2-opt candidate.
+- `canvas_reset_right_steps` / `canvas_reset_down_steps`: recovery steps after the `color_*.txt` hard reset.
+- `timing.canvas_reset_*`: stick hold and settle timing for the `color_*.txt` hard reset.
+
+## Developer Setup
 
 ```bash
 uv venv --python 3.13
@@ -52,28 +161,6 @@ uv run --group benchmark pytest benchmarks/test_planner_strategy_benchmark.py --
 uv run --group benchmark pytest benchmarks/test_tsp_limit_benchmark.py --benchmark-only
 ```
 
-Commit messages are checked with Commitizen and should use Conventional Commits.
-Enable the versioned git hook once:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-Examples: `feat: add GUI color swatch`, `fix: close run instructions dialog`,
-`docs: update release notes`.
-
-Update the changelog after release-facing changes:
-
-```bash
-uv run --group dev git-cliff --config pyproject.toml --output CHANGELOG.md
-```
-
-Preview only unreleased changes:
-
-```bash
-uv run --group dev git-cliff --config pyproject.toml --unreleased
-```
-
 ## Build Portable GUI Locally
 
 ```bash
@@ -87,126 +174,67 @@ intermediates by default; pass `--keep-build` if you need `build/` and
 `tomodachi-gui.spec` for debugging.
 
 GitHub Actions workflow `.github/workflows/python-app.yml` builds portable native GUI
-archives on Windows, macOS, and Linux with PyInstaller onedir. Run it manually from
-Actions, or push a semantic-version tag such as `v1.0.1`.
+archives on Windows, macOS, and Linux. Run it manually from Actions, or push a
+semantic-version tag such as `vX.Y.Z`.
 
-Tag releases are the version hook: the workflow validates that `vX.Y.Z` matches
-`pyproject.toml`'s project version, then publishes the portable archives as GitHub
-Release assets.
+## Git Workflow
 
-## Native GUI
-
-Run `uv run tomodachi-gui` from source, or use the Release build. The GUI provides the
-same workflow as the CLI: choose a Living the Grid JSON, generate output, pair the
-controller, then send the generated files while showing progress. It renders the JSON
-preview, can show the generated run instructions in a separate window, supports
-Chinese/English plus light/dark themes, lets non-84-color generated output skip selected
-color files, and keeps serial work in a background thread.
-
-![Tomodachi Macrogen GUI screenshot](docs/gui-screenshot.png)
-
-## CLI
-
-`tomodachi-macrogen` is the main command. With an input JSON and `--port`, it writes a
-timestamped output directory, sends the controller pairing macro, waits 4 seconds, then
-sends the generated drawing macros using SwiCC `+Q` encoding and `+GQF` queue polling.
-
-Omit `--port` to write files for later use. Use `--match-controller` without an input
-JSON to run the controller pairing step by itself.
-
-Common commands:
+Commit messages are checked with Commitizen and should use Conventional Commits.
+Enable the repository git hooks once:
 
 ```bash
-# List serial ports
-uv run tomodachi-macrogen --list-ports
-
-# Generate, pair the controller, then draw
-uv run tomodachi-macrogen input.json --port COM5
-
-# Only pair the controller
-uv run tomodachi-macrogen --port COM5 --match-controller
-
-# Generate files for later use
-uv run tomodachi-macrogen input.json
-
-# Clean generated outputs and caches
-uv run tomodachi-clean
+git config core.hooksPath .githooks
 ```
 
-Output always goes to `out/<input-name>-<timestamp>/`.
+Examples: `feat: add GUI color swatch`, `fix: close run instructions dialog`,
+`docs: update release notes`.
 
-- `input`: Living the Grid JSON.
-- `--port COM5`: generate, pair, and draw through the selected serial port.
-- `--list-ports`: list available serial ports.
-- `--match-controller`: with no input, run the controller pairing step by itself.
-- `--config CONFIG`: extra config JSON overriding `config.default.json`.
-- `--color-order frequency|original-palette|luminance|hue`: color file order, default `original-palette`, matching Living the Grid UI order.
-- `--diagonal-movement`: experimental D-pad diagonal movement for canvas travel.
-- `--clean-output`: delete generated outputs under `out/`.
-- `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
+The post-commit hook regenerates `CHANGELOG.md` with git-cliff and amends it into
+the same commit. After each commit, check the working tree before pushing; generated
+inputs such as `mmx.json` should stay untracked unless they are intentionally added as
+fixtures.
 
-For cleanup, use `uv run tomodachi-clean`. Pass `--output` or `--cache` to limit cleanup
-to one target.
+```bash
+# Commit local changes
+git status --short
+git add <files-you-intend-to-commit>
+git commit -m "fix: describe the behavior"
+git status --short
 
-For each color, the generator dry-runs nearest-run, row-snake, and bounded TSP/2-opt
-drawing paths, then writes the fastest one. Path mode flags were removed.
+# Push the current branch
+git push origin main
 
-## Outputs
+# Push an existing tag only
+git push origin <tag>
+```
 
-- `color_XX_*.txt`: one generated macro per used color, in the order they should run.
-- `preview_quantized.png`: preview reconstructed from JSON.
-- `reconstructed_from_macro.png`: image reconstructed from generated draw coordinates.
-- `palette_report.csv`: colors, H/S/B values, pixel counts, and slot assignment.
-- `manifest.json`: generation summary.
-- `config_used.json`: merged runtime config.
-- `README_RUN.md` / `README_RUN-en.md`: run instructions.
+For a patch release:
 
-## Hardware
+```bash
+uv run --group dev cz bump --increment PATCH --yes
+uv run tomodachi-check-version --tag <tag>
+git push origin main <tag>
+```
 
-Firmware:
+If `uv.lock` changes after the bump commit, amend it into that release commit and move
+the local tag before pushing:
 
-- SwiCC_RP2040: <https://github.com/knflrpn/SwiCC_RP2040/releases>
-- UART bridge: <https://github.com/knflrpn/SwiCC_RP2040/blob/main/documentation/SwiCC_UART_Bridge.uf2>
+```bash
+git add uv.lock
+git commit --amend --no-edit
+git tag -f <tag>
+uv run tomodachi-check-version --tag <tag>
+git push origin main <tag>
+```
 
-To flash UF2, hold `BOOTSEL` while plugging USB, then copy the matching `.uf2` to the `RPI-RP2` drive.
+Preview unreleased changelog content without writing the file:
 
-Enable Pro Controller Wired Communication in Switch system settings.
+```bash
+uv run --group dev git-cliff --config pyproject.toml --unreleased
+```
 
-- Board A plugs into the Switch / Dock and runs the SwiCC_RP2040 main firmware.
-- Board B plugs into the computer and runs `SwiCC_UART_Bridge.uf2`.
-- Board A GPIO0/TX connects to Board B GPIO1/RX.
-- Board A GPIO1/RX connects to Board B GPIO0/TX.
-- Board A GND connects to Board B GND.
-- Do not connect 5V or 3V3 between boards.
-- For Waveshare RP2040-Zero, wire by GPIO labels, not guessed physical position.
-
-![Waveshare RP2040-Zero pinout](https://mischianti.org/wp-content/uploads/2022/09/Waveshare-rp2040-zero-Raspberry-Pi-Pico-alternative-pinout.jpg)
-
-## In-Game Setup
-
-1. Open the face paint drawing screen.
-2. Reset the in-game brush to 1 px.
-3. For 84-color mode, confirm the 84-color palette starts on the lower-left black swatch (R7C1). For full-color / HSB mode, the 1 px brush reset is the only color-picker prerequisite.
-4. Run generated `color_*.txt` files in filename order. Each file hard-resets the brush cursor to the canvas start.
-5. Do not manually change the selected palette swatch between generated files.
-
-The generated macro treats one Living the Grid cell as one brush stamp; movement is scaled by `brush.px`. If every used palette entry includes `game: {row, col}`, `game: {extra}`, or a label like `R1·C1`, the macro opens the current swatch with `Y Y L1`, then selects from the 84-color Game Palette by moving relative to the lower-left black swatch or the last selected 84-color position. Otherwise it opens the H/S/B picker and uses JSON `press.h/s/b` values. Each `color_*.txt` starts with a hard canvas reset: hold the stick upper-left for 7 seconds, then move right 192 and down 77.
-
-## Config
-
-Defaults live in `config.default.json`. Current defaults are intentionally conservative to avoid missed inputs on hardware.
-
-Common tuning fields:
-
-- `timing.*`: button, movement, and menu waits.
-- `game_palette_*`: default Game Palette dimensions and timing.
-- `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
-- `enable_diagonal_movement`: experimental combined D-pad movement; leave off unless it is
-  stable on your hardware.
-- `path_tsp_max_runs`: maximum horizontal runs for the bounded TSP/2-opt candidate. Larger
-  values can improve sparse drawings but make generation slower.
-- `canvas_reset_right_steps` / `canvas_reset_down_steps`: recovery steps after the `color_*.txt` hard reset.
-- `timing.canvas_reset_*`: stick hold and settle timing for the `color_*.txt` hard reset.
+Tag releases are checked by CI: `vX.Y.Z` must match `pyproject.toml`, then GitHub
+Actions publishes the portable archives as Release assets.
 
 ## References
 
