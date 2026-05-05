@@ -18,12 +18,12 @@ from src.core.config import AppConfig, ConfigInput, as_app_config, deep_merge
 from src.core.living_grid import LivingGridData, load_living_grid_json
 from src.core.palette import BatchColor, PaletteColor, rgb_to_hsv
 from src.core.path_planner import PATH_STRATEGIES, PathPlanningContext, iter_path_strategies
-from src.macro.macro_timing import (
+from src.macro.timing import (
     dry_run_draw,
     format_frame_duration,
     frames_to_seconds,
 )
-from src.macro.macro_writer import MacroWriter
+from src.macro.writer import MacroWriter
 from swicc_runner import (
     build_command_list,
     import_serial_tools,

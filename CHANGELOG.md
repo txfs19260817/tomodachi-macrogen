@@ -9,6 +9,7 @@ All notable changes to this project are generated from Git history by git-cliff.
 
 
 ### Refactoring
+- Rename grouped modules
 - Group source and test modules
 
 

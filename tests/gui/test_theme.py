@@ -1,4 +1,4 @@
-from src.gui.gui_theme import build_theme_style
+from src.gui.theme import build_theme_style
 
 
 def test_light_theme_defines_table_palette() -> None:

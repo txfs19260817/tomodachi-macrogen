@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from ..core.config import ConfigInput
-from .macro_writer import MacroWriter
+from .writer import MacroWriter
 
 MACRO_FRAMES_PER_SECOND = 60.0
 

@@ -1,6 +1,6 @@
 import unittest
 
-from src.gui.gui_i18n import configure_i18n, set_locale, tr
+from src.gui.i18n import configure_i18n, set_locale, tr
 
 
 class TestGuiI18n(unittest.TestCase):
