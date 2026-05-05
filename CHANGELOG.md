@@ -8,6 +8,10 @@ All notable changes to this project are generated from Git history by git-cliff.
 - Streamline user and developer guides
 
 
+### Legacy Changes
+- Version 1.0.4 → 1.0.5
+
+
 ## [1.0.4] - 2026-05-05
 
 ### Features
