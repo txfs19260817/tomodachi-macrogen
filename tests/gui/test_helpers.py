@@ -46,6 +46,7 @@ def test_build_macro_file_infos_joins_manifest_part_metadata() -> None:
                 "pixel_count": 30,
                 "line_count": 12,
                 "frame_count": 300,
+                "path_strategy": "tsp",
             },
             {
                 "file": "color_02_000000.txt",
@@ -54,6 +55,7 @@ def test_build_macro_file_infos_joins_manifest_part_metadata() -> None:
                 "pixel_count": "20",
                 "line_count": "8",
                 "frame_count": "200",
+                "path_strategy": "snake",
             },
         ]
     }
@@ -64,12 +66,15 @@ def test_build_macro_file_infos_joins_manifest_part_metadata() -> None:
     assert infos[0].palette_source == "hsb"
     assert infos[0].pixel_count == 30
     assert infos[0].line_count == 12
+    assert infos[0].path_strategy == "tsp"
     assert infos[1].color_hex == "#000000"
     assert infos[1].palette_source == "game"
     assert infos[1].pixel_count == 20
     assert infos[1].frame_count == 200
+    assert infos[1].path_strategy == "snake"
     assert infos[2].color_hex is None
     assert infos[2].pixel_count is None
+    assert infos[2].path_strategy is None
 
 
 def test_macro_file_skip_is_allowed_only_for_non_84_color_output() -> None:

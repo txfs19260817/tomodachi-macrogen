@@ -21,8 +21,9 @@ FILE_TABLE_COLOR_COLUMN = 1
 FILE_TABLE_FILE_COLUMN = 2
 FILE_TABLE_PIXELS_COLUMN = 3
 FILE_TABLE_LINES_COLUMN = 4
-FILE_TABLE_TIME_COLUMN = 5
-FILE_TABLE_COLUMNS = 6
+FILE_TABLE_PLANNER_COLUMN = 5
+FILE_TABLE_TIME_COLUMN = 6
+FILE_TABLE_COLUMNS = 7
 
 
 @dataclass(frozen=True)
@@ -130,6 +131,7 @@ def main() -> int:
             QGridLayout,
             QGroupBox,
             QHBoxLayout,
+            QHeaderView,
             QLabel,
             QLineEdit,
             QMainWindow,
@@ -222,6 +224,10 @@ def main() -> int:
             self.subtitle_label = QLabel()
             self.subtitle_label.setObjectName("Muted")
             self.subtitle_label.setWordWrap(True)
+            self.subtitle_label.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Fixed,
+            )
             right_layout.addLayout(hero_row)
             right_layout.addWidget(self.subtitle_label)
             self.living_grid_link = QLabel()
@@ -299,6 +305,14 @@ def main() -> int:
             self.file_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
             self.file_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
             self.file_table.itemChanged.connect(lambda _item: self.update_draw_button_enabled())
+            table_header = self.file_table.horizontalHeader()
+            table_header.setStretchLastSection(False)
+            for column in range(FILE_TABLE_COLUMNS):
+                table_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+            table_header.setSectionResizeMode(
+                FILE_TABLE_FILE_COLUMN,
+                QHeaderView.ResizeMode.Stretch,
+            )
             self.draw_button = QPushButton()
             self.draw_button.setObjectName("PrimaryButton")
             self.draw_button.clicked.connect(self.start_draw)
@@ -424,6 +438,7 @@ def main() -> int:
                     tr("draw.file_name"),
                     tr("draw.file_pixels"),
                     tr("draw.file_lines"),
+                    tr("draw.file_planner"),
                     tr("draw.file_time"),
                 ]
             )
@@ -642,11 +657,7 @@ def main() -> int:
                 self.file_table.setRowCount(0)
                 for row, info in enumerate(self.macro_file_infos):
                     self.file_table.insertRow(row)
-                    skippable = (
-                        self.macro_file_skip_allowed
-                        and info.color_hex is not None
-                        and info.palette_source != "game"
-                    )
+                    skippable = self.is_macro_file_info_skippable(info)
                     tooltip = self.file_row_tooltip(skippable, info)
 
                     use_item = self.readonly_table_item("")
@@ -678,16 +689,39 @@ def main() -> int:
                     line_item.setToolTip(tooltip)
                     self.file_table.setItem(row, FILE_TABLE_LINES_COLUMN, line_item)
 
+                    planner_item = self.readonly_table_item(info.path_strategy or "-")
+                    planner_item.setToolTip(self.file_row_planner_tooltip(info))
+                    self.file_table.setItem(row, FILE_TABLE_PLANNER_COLUMN, planner_item)
+
                     time_item = self.readonly_table_item(
                         self.format_table_duration(info.frame_count)
                     )
                     time_item.setToolTip(self.file_row_time_tooltip(info))
                     self.file_table.setItem(row, FILE_TABLE_TIME_COLUMN, time_item)
-                self.file_table.resizeColumnsToContents()
-                self.file_table.horizontalHeader().setStretchLastSection(True)
             finally:
                 self.file_table.blockSignals(False)
             self.update_draw_button_enabled()
+
+        def is_macro_file_info_skippable(self, info: MacroFileInfo) -> bool:
+            return (
+                self.macro_file_skip_allowed
+                and info.color_hex is not None
+                and info.palette_source != "game"
+            )
+
+        def update_file_table_checkable_state(self, *, busy: bool) -> None:
+            self.file_table.blockSignals(True)
+            try:
+                for row, info in enumerate(self.macro_file_infos):
+                    use_item = self.file_table.item(row, FILE_TABLE_USE_COLUMN)
+                    if use_item is None:
+                        continue
+                    use_flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+                    if self.is_macro_file_info_skippable(info) and not busy:
+                        use_flags |= Qt.ItemFlag.ItemIsUserCheckable
+                    use_item.setFlags(use_flags)
+            finally:
+                self.file_table.blockSignals(False)
 
         def file_row_tooltip(self, skippable: bool, info: MacroFileInfo) -> str:
             if skippable:
@@ -704,6 +738,11 @@ def main() -> int:
             if info.path_strategy:
                 return tr("draw.file_time_tooltip", strategy=info.path_strategy)
             return tr("draw.file_time_tooltip", strategy="-")
+
+        def file_row_planner_tooltip(self, info: MacroFileInfo) -> str:
+            if info.path_strategy:
+                return tr("draw.file_planner_tooltip", strategy=info.path_strategy)
+            return tr("draw.file_planner_tooltip", strategy="-")
 
         def readonly_table_item(self, text: str) -> QTableWidgetItem:
             item = QTableWidgetItem(text)
@@ -888,7 +927,7 @@ def main() -> int:
         def set_busy(self, busy: bool, status_key: str) -> None:
             self.generate_button.setDisabled(busy)
             self.match_button.setDisabled(busy)
-            self.file_table.setDisabled(busy)
+            self.update_file_table_checkable_state(busy=busy)
             self.update_draw_button_enabled(force_disabled=busy)
             self.cancel_draw_button.setEnabled(
                 busy

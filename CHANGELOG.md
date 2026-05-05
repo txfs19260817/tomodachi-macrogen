@@ -4,6 +4,12 @@ All notable changes to this project are generated from Git history by git-cliff.
 
 ## Unreleased
 
+### Features
+- Show planner in GUI file table
+
+
+## [1.0.5] - 2026-05-05
+
 ### Documentation
 - Streamline user and developer guides
 

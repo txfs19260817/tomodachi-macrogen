@@ -55,6 +55,8 @@ TRANSLATIONS = {
         "draw.file_name": "文件",
         "draw.file_pixels": "像素",
         "draw.file_lines": "行数",
+        "draw.file_planner": "Planner",
+        "draw.file_planner_tooltip": "这个颜色文件实际采用的绘图路径策略：%strategy。",
         "draw.file_time": "预计",
         "draw.file_time_tooltip": "预计发送耗时；绘图路径策略：%strategy。",
         "draw.skip_allowed_tooltip": "取消勾选可跳过这个颜色文件，例如已手动用油漆桶填充背景色。",
@@ -147,6 +149,10 @@ TRANSLATIONS = {
         "draw.file_name": "File",
         "draw.file_pixels": "Pixels",
         "draw.file_lines": "Lines",
+        "draw.file_planner": "Planner",
+        "draw.file_planner_tooltip": (
+            "Drawing path strategy selected for this color file: %strategy."
+        ),
         "draw.file_time": "Est.",
         "draw.file_time_tooltip": "Estimated send duration; drawing path strategy: %strategy.",
         "draw.skip_allowed_tooltip": (
