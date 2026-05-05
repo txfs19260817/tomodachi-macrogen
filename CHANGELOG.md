@@ -5,6 +5,12 @@ All notable changes to this project are generated from Git history by git-cliff.
 ## Unreleased
 
 ### Features
+- Add adaptive path planning benchmarks
+
+
+## [1.0.3] - 2026-05-04
+
+### Features
 - Add GUI app icon
 - Skip non-84 color files in GUI
 

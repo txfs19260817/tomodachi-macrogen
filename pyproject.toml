@@ -20,6 +20,9 @@ tomodachi-check-version = "tomodachi_check_version:main"
 tomodachi-clean = "tomodachi_macrogen:clean_main"
 
 [dependency-groups]
+benchmark = [
+  "pytest-benchmark>=5.2.3",
+]
 build = [
   "pyinstaller>=6.20",
 ]

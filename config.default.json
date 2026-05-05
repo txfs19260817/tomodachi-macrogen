@@ -1,6 +1,8 @@
 {
   "canvas_origin_x": 0,
   "canvas_origin_y": 0,
+  "enable_diagonal_movement": false,
+  "path_tsp_max_runs": 400,
   "color_order": "original-palette",
   "palette_slots": 9,
   "game_palette_rows": 7,

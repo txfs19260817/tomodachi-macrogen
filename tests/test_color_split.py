@@ -5,11 +5,12 @@ from pathlib import Path
 
 from PIL import Image
 
+from src.config import AppConfig
 from src.living_grid import load_living_grid_json
-from src.path_planner import plan_color_pixels
 from tomodachi_macrogen import (
     GenerationOptions,
     build_living_grid_colors,
+    choose_color_path,
     generate_color_split_macros,
     generate_macros,
 )
@@ -31,8 +32,17 @@ class TestColorSplit(unittest.TestCase):
 
             manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["split_strategy"], "color")
+            self.assertEqual(manifest["path_strategy"], "auto")
+            self.assertEqual(set(manifest["path_candidates"]), {"nearest-runs", "snake", "tsp"})
+            self.assertIn("estimated_seconds", manifest)
             self.assertEqual(len(manifest["parts"]), manifest["palette_color_count"])
             self.assertTrue(all(part["assigned_slot"] == 0 for part in manifest["parts"]))
+            self.assertTrue(
+                all(
+                    part["path_strategy"] in {"nearest-runs", "snake", "tsp"}
+                    for part in manifest["parts"]
+                )
+            )
             self.assertTrue(
                 all(part["palette_source"] in {"game", "hsb"} for part in manifest["parts"])
             )
@@ -68,8 +78,39 @@ class TestColorSplit(unittest.TestCase):
         for color, writer in writers:
             lines = [line.text for line in writer.lines]
             self.assertIn("{} (0 0 128 128) 3", lines)
-            expected_path = plan_color_pixels(grid.indices, color.color_index, start=(0, 0))
-            self.assertEqual(writer.canvas_position(), expected_path[-1])
+            chosen_path = choose_color_path(
+                writer.config,
+                grid.indices,
+                color.color_index,
+                start=(0, 0),
+            )
+            self.assertEqual(writer.canvas_position(), chosen_path.points[-1])
+
+    def test_auto_path_strategy_records_the_fastest_dry_run(self) -> None:
+        config = {
+            "timing": {
+                "draw_hold_frames": 3,
+                "draw_release_frames": 2,
+                "movement_hold_frames": 1,
+                "movement_release_frames": 1,
+            }
+        }
+
+        chosen_path = choose_color_path(
+            AppConfig.from_mapping(config),
+            [
+                [0, 1, 0, 1],
+                [1, 1, 0, 0],
+            ],
+            1,
+            start=(0, 0),
+        )
+
+        self.assertEqual(chosen_path.strategy, "tsp")
+        self.assertEqual(
+            chosen_path.draw_frame_count,
+            min(chosen_path.path_candidate_frames.values()),
+        )
 
     def test_game_palette_coordinates_select_84_color_tab_without_hsb_tab(self) -> None:
         payload = {

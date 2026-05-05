@@ -20,6 +20,9 @@ class MacroWriter:
         self.current_x = self.config.canvas_origin_x
         self.current_y = self.config.canvas_origin_y
         self.draw_events: list[tuple[int, int]] = []
+        self.path_strategy: str | None = None
+        self.draw_frame_count: int | None = None
+        self.path_candidate_frames: dict[str, int] = {}
 
     def tap(
         self,
@@ -68,17 +71,17 @@ class MacroWriter:
 
         dx = target_x - self.current_x
         dy = target_y - self.current_y
-        if dx > 0:
-            self._move_canvas_direction("R", dx * self.canvas_cell_step)
-        elif dx < 0:
-            self._move_canvas_direction("L", -dx * self.canvas_cell_step)
-        if dy > 0:
-            self._move_canvas_direction("D", dy * self.canvas_cell_step)
-        elif dy < 0:
-            self._move_canvas_direction("U", -dy * self.canvas_cell_step)
+        if self.config.enable_diagonal_movement:
+            self._move_canvas_delta_diagonal(dx, dy)
+        else:
+            self._move_canvas_delta_axis_aligned(dx, dy)
 
         self.current_x = target_x
         self.current_y = target_y
+
+    def set_canvas_position(self, x: int, y: int) -> None:
+        self.current_x = int(x) + self.config.canvas_origin_x
+        self.current_y = int(y) + self.config.canvas_origin_y
 
     def reset_canvas_to_origin(self) -> None:
         neutral = self._neutral_stick()
@@ -121,12 +124,45 @@ class MacroWriter:
         return sum(line.frames for line in self.lines)
 
     def _move_canvas_direction(self, direction: str, steps: int) -> None:
+        self._move_canvas_buttons((direction,), steps)
+
+    def _move_canvas_delta_axis_aligned(self, dx: int, dy: int) -> None:
+        if dx > 0:
+            self._move_canvas_direction("R", dx * self.canvas_cell_step)
+        elif dx < 0:
+            self._move_canvas_direction("L", -dx * self.canvas_cell_step)
+        if dy > 0:
+            self._move_canvas_direction("D", dy * self.canvas_cell_step)
+        elif dy < 0:
+            self._move_canvas_direction("U", -dy * self.canvas_cell_step)
+
+    def _move_canvas_delta_diagonal(self, dx: int, dy: int) -> None:
+        horizontal = "R" if dx > 0 else "L" if dx < 0 else None
+        vertical = "D" if dy > 0 else "U" if dy < 0 else None
+        horizontal_steps = abs(dx) * self.canvas_cell_step
+        vertical_steps = abs(dy) * self.canvas_cell_step
+
+        if horizontal is not None and vertical is not None:
+            diagonal_steps = min(horizontal_steps, vertical_steps)
+            self._move_canvas_buttons((horizontal, vertical), diagonal_steps)
+            horizontal_steps -= diagonal_steps
+            vertical_steps -= diagonal_steps
+
+        if horizontal is not None:
+            self._move_canvas_direction(horizontal, horizontal_steps)
+        if vertical is not None:
+            self._move_canvas_direction(vertical, vertical_steps)
+
+    def _move_canvas_buttons(self, buttons: Iterable[str], steps: int) -> None:
+        normalized = tuple(normalize_button(button) for button in buttons)
+        if any(button not in {"U", "D", "L", "R"} for button in normalized):
+            raise ValueError("canvas movement buttons must be U, D, L, or R")
         hold = self.timing.movement_hold_frames
         release = self.timing.movement_release_frames
         chunk_size = self.timing.movement_chunk_size
         chunk_settle = self.timing.movement_chunk_settle_frames
         for step in range(steps):
-            self.tap(direction, hold, release)
+            self.tap(normalized, hold, release)
             if chunk_size > 0 and chunk_settle > 0 and step + 1 < steps:
                 if (step + 1) % chunk_size == 0:
                     self.wait(chunk_settle)

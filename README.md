@@ -43,6 +43,15 @@ uv run ruff check .
 uv run pytest -n auto tests
 ```
 
+Benchmarks:
+
+```bash
+uv sync --group benchmark
+uv run --group benchmark pytest benchmarks --benchmark-only
+uv run --group benchmark pytest benchmarks/test_planner_strategy_benchmark.py --benchmark-only
+uv run --group benchmark pytest benchmarks/test_tsp_limit_benchmark.py --benchmark-only
+```
+
 Commit messages are checked with Commitizen and should use Conventional Commits.
 Enable the versioned git hook once:
 
@@ -132,13 +141,15 @@ Output always goes to `out/<input-name>-<timestamp>/`.
 - `--match-controller`: with no input, run the controller pairing step by itself.
 - `--config CONFIG`: extra config JSON overriding `config.default.json`.
 - `--color-order frequency|original-palette|luminance|hue`: color file order, default `original-palette`, matching Living the Grid UI order.
+- `--diagonal-movement`: experimental D-pad diagonal movement for canvas travel.
 - `--clean-output`: delete generated outputs under `out/`.
 - `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
 
 For cleanup, use `uv run tomodachi-clean`. Pass `--output` or `--cache` to limit cleanup
 to one target.
 
-The drawing path is fixed to same-color horizontal run planning. Path mode flags were removed.
+For each color, the generator dry-runs nearest-run, row-snake, and bounded TSP/2-opt
+drawing paths, then writes the fastest one. Path mode flags were removed.
 
 ## Outputs
 
@@ -190,6 +201,10 @@ Common tuning fields:
 - `timing.*`: button, movement, and menu waits.
 - `game_palette_*`: default Game Palette dimensions and timing.
 - `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
+- `enable_diagonal_movement`: experimental combined D-pad movement; leave off unless it is
+  stable on your hardware.
+- `path_tsp_max_runs`: maximum horizontal runs for the bounded TSP/2-opt candidate. Larger
+  values can improve sparse drawings but make generation slower.
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`: recovery steps after the `color_*.txt` hard reset.
 - `timing.canvas_reset_*`: stick hold and settle timing for the `color_*.txt` hard reset.
 

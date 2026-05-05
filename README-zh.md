@@ -42,6 +42,15 @@ uv run ruff check .
 uv run pytest -n auto tests
 ```
 
+Benchmark：
+
+```bash
+uv sync --group benchmark
+uv run --group benchmark pytest benchmarks --benchmark-only
+uv run --group benchmark pytest benchmarks/test_planner_strategy_benchmark.py --benchmark-only
+uv run --group benchmark pytest benchmarks/test_tsp_limit_benchmark.py --benchmark-only
+```
+
 提交标题用 Commitizen 检查，格式使用 Conventional Commits。第一次启用仓库内的 git hook：
 
 ```bash
@@ -126,12 +135,14 @@ uv run tomodachi-clean
 - `--match-controller`：不提供 JSON 时，单独执行匹配手柄步骤。
 - `--config CONFIG`：额外配置，会覆盖 `config.default.json`。
 - `--color-order frequency|original-palette|luminance|hue`：颜色文件顺序，默认 `original-palette`，也就是 Living the Grid UI 顺序。
+- `--diagonal-movement`：实验性画布斜向移动。
 - `--clean-output`：删除 `out/` 下的生成结果。
 - `--clean-cache`：删除 `.ruff_cache`、`__pycache__` 等缓存。
 
 清理输出或缓存可以用 `uv run tomodachi-clean`。传 `--output` 或 `--cache` 可以限定清理范围。
 
-绘图路径固定为同色水平连续段规划，不再暴露路径模式 flag。
+每个颜色会先 dry-run 比较 nearest-run、逐行 snake、有限规模 TSP/2-opt 路径，
+再写入耗时更短的结果。不再暴露路径模式 flag。
 
 ## 输出
 
@@ -183,6 +194,8 @@ Switch 系统设置里需要打开 Pro Controller Wired Communication。
 - `timing.*`：按键、移动、菜单等待时间。
 - `game_palette_*`：默认 Game Palette 导航尺寸和等待时间。
 - `movement_chunk_size` / `movement_chunk_settle_frames`：长距离移动时分块停顿。
+- `enable_diagonal_movement`：实验性组合方向键移动；实机确认稳定前建议保持关闭。
+- `path_tsp_max_runs`：TSP/2-opt 候选最多处理的水平连续段数量。调高可能优化稀疏图，但会让生成变慢。
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`：`color_*.txt` 开头硬复位后的回退步数。
 - `timing.canvas_reset_*`：`color_*.txt` 开头硬复位的摇杆保持和停顿时间。
 

@@ -30,6 +30,10 @@ TRANSLATIONS = {
         "generate.open_living_grid": "打开 Living the Grid",
         "generate.open_living_grid_tooltip": "在默认浏览器中打开 Living the Grid 生成 JSON。",
         "generate.output_hint": "自动写入 out/<JSON 名>-<时间戳>/",
+        "generate.diagonal_movement": "实验性斜向移动",
+        "generate.diagonal_movement_tooltip": (
+            "生成时允许同时按两个方向键移动画布光标；需要实机确认稳定后再长期使用。"
+        ),
         "generate.button": "生成宏",
         "serial.group": "2. 串口和手柄",
         "serial.port": "串口",
@@ -51,6 +55,8 @@ TRANSLATIONS = {
         "draw.file_name": "文件",
         "draw.file_pixels": "像素",
         "draw.file_lines": "行数",
+        "draw.file_time": "预计",
+        "draw.file_time_tooltip": "预计发送耗时；绘图路径策略：%strategy。",
         "draw.skip_allowed_tooltip": "取消勾选可跳过这个颜色文件，例如已手动用油漆桶填充背景色。",
         "draw.skip_forbidden_84_tooltip": "84 色模式不允许跳过，避免后续相对色板位置错误。",
         "draw.skip_forbidden_parts_tooltip": "普通分片必须全部发送。",
@@ -77,7 +83,9 @@ TRANSLATIONS = {
         "error.no_files": "先生成宏。",
         "error.open_living_grid": "无法打开 Living the Grid。",
         "error.open_readme": "无法显示运行说明。",
-        "generation.meta": "%out_dir\n%files files, %lines lines, %frames frames",
+        "generation.meta": (
+            "%out_dir\n%files files, %lines lines, %frames frames, est %duration"
+        ),
         "progress.transfer": "%percent  queue=%queue  ETA %eta",
     },
     "en": {
@@ -111,6 +119,11 @@ TRANSLATIONS = {
             "Open Living the Grid in your default browser to create JSON."
         ),
         "generate.output_hint": "Automatically writes to out/<JSON name>-<timestamp>/",
+        "generate.diagonal_movement": "Experimental diagonal movement",
+        "generate.diagonal_movement_tooltip": (
+            "Allows combined D-pad directions while generating canvas cursor movement; "
+            "keep it off unless it works reliably on hardware."
+        ),
         "generate.button": "Generate",
         "serial.group": "2. Serial and Controller",
         "serial.port": "Port",
@@ -134,6 +147,8 @@ TRANSLATIONS = {
         "draw.file_name": "File",
         "draw.file_pixels": "Pixels",
         "draw.file_lines": "Lines",
+        "draw.file_time": "Est.",
+        "draw.file_time_tooltip": "Estimated send duration; drawing path strategy: %strategy.",
         "draw.skip_allowed_tooltip": (
             "Uncheck to skip this color file, for example when the background was filled manually."
         ),
@@ -164,7 +179,9 @@ TRANSLATIONS = {
         "error.no_files": "Generate macros first.",
         "error.open_living_grid": "Could not open Living the Grid.",
         "error.open_readme": "Could not display the run instructions.",
-        "generation.meta": "%out_dir\n%files files, %lines lines, %frames frames",
+        "generation.meta": (
+            "%out_dir\n%files files, %lines lines, %frames frames, est %duration"
+        ),
         "progress.transfer": "%percent  queue=%queue  ETA %eta",
     },
 }

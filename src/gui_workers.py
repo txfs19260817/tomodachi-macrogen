@@ -12,31 +12,21 @@ from tomodachi_macrogen import (
 )
 
 
-def format_duration(seconds: float | None) -> str:
-    if seconds is None or seconds < 0:
-        return "--:--"
-    total = int(seconds + 0.5)
-    hours, remainder = divmod(total, 3600)
-    minutes, secs = divmod(remainder, 60)
-    if hours:
-        return f"{hours:d}:{minutes:02d}:{secs:02d}"
-    return f"{minutes:02d}:{secs:02d}"
-
-
 class GenerateWorker(QObject):
     status = pyqtSignal(str)
     finished = pyqtSignal(object)
     failed = pyqtSignal(str)
 
-    def __init__(self, input_path: Path) -> None:
+    def __init__(self, input_path: Path, *, enable_diagonal_movement: bool = False) -> None:
         super().__init__()
         self.input_path = input_path
+        self.enable_diagonal_movement = enable_diagonal_movement
 
     def run(self) -> None:
         try:
             result = generate_macros(
                 self.input_path,
-                GenerationOptions(),
+                GenerationOptions(enable_diagonal_movement=self.enable_diagonal_movement),
                 progress_callback=self.status.emit,
             )
         except Exception as error:  # noqa: BLE001 - surface worker errors in the GUI.

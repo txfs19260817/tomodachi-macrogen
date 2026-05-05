@@ -211,6 +211,8 @@ class AppConfig:
     canvas_origin_x: int = 0
     canvas_origin_y: int = 0
     canvas_cell_step: int | None = None
+    enable_diagonal_movement: bool = False
+    path_tsp_max_runs: int = 400
     color_order: str = "original-palette"
     palette_slots: int = 9
     game_palette_rows: int = 7
@@ -236,6 +238,16 @@ class AppConfig:
                 data,
                 "canvas_cell_step",
                 defaults.canvas_cell_step,
+            ),
+            enable_diagonal_movement=_as_bool(
+                data,
+                "enable_diagonal_movement",
+                defaults.enable_diagonal_movement,
+            ),
+            path_tsp_max_runs=_as_int(
+                data,
+                "path_tsp_max_runs",
+                defaults.path_tsp_max_runs,
             ),
             color_order=str(data.get("color_order", defaults.color_order)),
             palette_slots=_as_int(data, "palette_slots", defaults.palette_slots),
@@ -301,12 +313,15 @@ class AppConfig:
         *,
         palette_slots: int | None = None,
         color_order: str | None = None,
+        enable_diagonal_movement: bool | None = None,
     ) -> AppConfig:
         updates: dict[str, Any] = {}
         if palette_slots is not None:
             updates["palette_slots"] = palette_slots
         if color_order is not None:
             updates["color_order"] = color_order
+        if enable_diagonal_movement is not None:
+            updates["enable_diagonal_movement"] = enable_diagonal_movement
         return replace(self, **updates) if updates else self
 
     def to_dict(self) -> dict[str, Any]:
@@ -343,6 +358,19 @@ def _as_optional_int(
 ) -> int | None:
     value = data.get(key, default)
     return None if value is None else int(value)
+
+
+def _as_bool(data: Mapping[str, Any], key: str, default: bool) -> bool:
+    value = data.get(key, default)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().casefold()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+    return bool(value)
 
 
 def _as_mapping(value: Any) -> Mapping[str, Any] | None:

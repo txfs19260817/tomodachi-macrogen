@@ -40,6 +40,25 @@ class TestMacroWriter(unittest.TestCase):
             ["{R} 1", "{} 1", "{R} 1", "{} 1", "{D} 1", "{} 1"],
         )
 
+    def test_move_cursor_can_use_experimental_diagonal_dpad(self) -> None:
+        writer = MacroWriter(
+            {
+                "enable_diagonal_movement": True,
+                "timing": {
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                },
+            }
+        )
+
+        writer.move_cursor_to(2, 1)
+
+        self.assertEqual(writer.canvas_position(), (2, 1))
+        self.assertEqual(
+            [line.text for line in writer.lines],
+            ["{R D} 1", "{} 1", "{R} 1", "{} 1"],
+        )
+
     def test_canvas_cell_step_scales_physical_movement_only(self) -> None:
         writer = MacroWriter(
             {

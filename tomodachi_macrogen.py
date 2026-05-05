@@ -15,9 +15,14 @@ from src import resources
 from src.color_picker import ColorPicker, GamePalettePosition
 from src.config import AppConfig, ConfigInput, as_app_config, deep_merge
 from src.living_grid import LivingGridData, load_living_grid_json
+from src.macro_timing import (
+    dry_run_draw,
+    format_frame_duration,
+    frames_to_seconds,
+)
 from src.macro_writer import MacroWriter
 from src.palette import BatchColor, PaletteColor, rgb_to_hsv
-from src.path_planner import plan_color_pixels
+from src.path_planner import PATH_STRATEGIES, PathPlanningContext, iter_path_strategies
 from src.resources import RUN_README_OUTPUTS, SOURCE_ROOT
 from swicc_runner import (
     build_command_list,
@@ -38,6 +43,7 @@ class GenerationOptions:
     output_root: str | Path | None = None
     timestamp: str | None = None
     color_order: str | None = None
+    enable_diagonal_movement: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -65,9 +71,19 @@ class MacroOutput:
     batch_count: int
     batch_colors: list[BatchColor]
     part_files: list[dict[str, Any]]
+    path_strategies: dict[str, int]
     reconstructed: Image.Image
     total_lines: int
     total_frames: int
+
+
+@dataclass(frozen=True)
+class ChosenPath:
+    points: list[tuple[int, int]]
+    strategy: str
+    draw_frame_count: int
+    draw_line_count: int
+    path_candidate_frames: dict[str, int]
 
 
 @dataclass(frozen=True)
@@ -127,9 +143,14 @@ def main() -> int:
         GenerationOptions(
             config_path=args.config,
             color_order=args.color_order,
+            enable_diagonal_movement=args.diagonal_movement or None,
         ),
     )
     print(f"Wrote Living the Grid macros to {result.out_dir}")
+    print(
+        "Estimated macro time: "
+        f"{format_frame_duration(result.total_frames)} ({result.total_frames} frames)"
+    )
     if args.port:
         print("Pairing controller and sending drawing macros...")
         send_macro_files(
@@ -235,6 +256,7 @@ def build_color_split_output(
         batch_count=0,
         batch_colors=color_split_report(colors),
         part_files=part_files,
+        path_strategies=path_strategy_report(writers),
         reconstructed=reconstruct_color_split_image(grid, writers),
         total_lines=sum(len(writer.lines) for _color, writer in writers),
         total_frames=sum(writer.total_frames() for _color, writer in writers),
@@ -252,7 +274,9 @@ def build_manifest(
 ) -> dict[str, Any]:
     return {
         "mode": "living-grid",
-        "path_strategy": "nearest-runs",
+        "path_strategy": "auto",
+        "path_candidates": list(PATH_STRATEGIES),
+        "path_strategies": macro_output.path_strategies,
         "split_strategy": macro_output.split_strategy,
         "input": str(input_path),
         "input_source": grid.source,
@@ -260,6 +284,7 @@ def build_manifest(
         "brush": grid.brush,
         "canvas": grid.canvas,
         "canvas_cell_step": config.canvas_cell_step,
+        "enable_diagonal_movement": config.enable_diagonal_movement,
         "palette_source": palette_source,
         "parts": macro_output.part_files,
         "preview": "preview_quantized.png",
@@ -269,6 +294,7 @@ def build_manifest(
         "batch_count": macro_output.batch_count,
         "total_lines": macro_output.total_lines,
         "total_frames": macro_output.total_frames,
+        "estimated_seconds": frames_to_seconds(macro_output.total_frames),
     }
 
 
@@ -297,6 +323,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--color-order",
         choices=["frequency", "original-palette", "luminance", "hue"],
         help="Order generated color files",
+    )
+    parser.add_argument(
+        "--diagonal-movement",
+        action="store_true",
+        help="Experimental: move canvas cursor with combined diagonal D-pad presses",
     )
     parser.add_argument(
         "--clean-output",
@@ -383,6 +414,7 @@ def load_config(config_path: str | Path | None) -> AppConfig:
 def apply_generation_overrides(config: AppConfig, options: GenerationOptions) -> AppConfig:
     return config.with_overrides(
         color_order=options.color_order,
+        enable_diagonal_movement=options.enable_diagonal_movement,
     )
 
 
@@ -491,16 +523,64 @@ def generate_color_split_macros(
         select_current_color(picker, palette_entry)
         game_palette_position = picker.game_palette_position
         writer.reset_canvas_to_origin()
-        pixels = plan_color_pixels(
+        chosen_path = choose_color_path(
+            config,
             grid.indices,
             color.color_index,
             start=writer.canvas_position(),
         )
-        writer.draw_pixels(pixels)
+        writer.path_strategy = chosen_path.strategy
+        writer.draw_frame_count = chosen_path.draw_frame_count
+        writer.path_candidate_frames = chosen_path.path_candidate_frames
+        writer.draw_pixels(chosen_path.points)
 
         writers.append((color, writer))
 
     return writers
+
+
+def choose_color_path(
+    config: AppConfig,
+    indices: list[list[int | None]],
+    color_index: int,
+    *,
+    start: tuple[int, int],
+) -> ChosenPath:
+    candidates: list[tuple[int, str, list[tuple[int, int]], int, int]] = []
+    context = PathPlanningContext(
+        indices=indices,
+        color_index=color_index,
+        start=start,
+        diagonal_movement=config.enable_diagonal_movement,
+        tsp_max_runs=config.path_tsp_max_runs,
+    )
+    for order, strategy in enumerate(iter_path_strategies()):
+        points = strategy.plan(context)
+        estimate = dry_run_draw(config, points, start=start)
+        candidates.append(
+            (
+                order,
+                strategy.name,
+                points,
+                estimate.frame_count,
+                estimate.line_count,
+            )
+        )
+
+    best_order, best_strategy, best_points, best_frames, best_lines = min(
+        candidates,
+        key=lambda candidate: (candidate[3], candidate[0]),
+    )
+    _ = best_order
+    return ChosenPath(
+        points=best_points,
+        strategy=best_strategy,
+        draw_frame_count=best_frames,
+        draw_line_count=best_lines,
+        path_candidate_frames={
+            strategy: frames for _order, strategy, _points, frames, _lines in candidates
+        },
+    )
 
 
 def has_game_palette_coordinates(
@@ -524,6 +604,14 @@ def color_split_report(colors: list[PaletteColor]) -> list[BatchColor]:
         BatchColor(color=color, batch_index=index, assigned_slot=0)
         for index, color in enumerate(colors)
     ]
+
+
+def path_strategy_report(writers: list[tuple[PaletteColor, MacroWriter]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for _color, writer in writers:
+        strategy = writer.path_strategy or "unknown"
+        counts[strategy] = counts.get(strategy, 0) + 1
+    return counts
 
 
 def reconstruct_color_split_image(
@@ -562,6 +650,10 @@ def write_color_parts(
                 "file": filename,
                 "line_count": len(lines),
                 "frame_count": writer.total_frames(),
+                "estimated_seconds": frames_to_seconds(writer.total_frames()),
+                "draw_frame_count": writer.draw_frame_count,
+                "path_strategy": writer.path_strategy,
+                "path_candidate_frames": writer.path_candidate_frames,
                 "color_index": color.color_index,
                 "hex": entry.hex,
                 "pixel_count": color.pixel_count,

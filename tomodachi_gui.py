@@ -9,6 +9,7 @@ from PIL import Image
 
 from src.gui_i18n import LOCALE_OPTIONS, configure_i18n, current_locale, set_locale, tr
 from src.gui_theme import build_theme_style
+from src.macro_timing import format_duration, format_frame_duration
 from src.resources import APP_ICON, RUN_README_EN_HTML, RUN_README_HTML
 from swicc_runner import TransferProgress, import_serial_tools
 from tomodachi_macrogen import GenerationResult
@@ -20,7 +21,8 @@ FILE_TABLE_COLOR_COLUMN = 1
 FILE_TABLE_FILE_COLUMN = 2
 FILE_TABLE_PIXELS_COLUMN = 3
 FILE_TABLE_LINES_COLUMN = 4
-FILE_TABLE_COLUMNS = 5
+FILE_TABLE_TIME_COLUMN = 5
+FILE_TABLE_COLUMNS = 6
 
 
 @dataclass(frozen=True)
@@ -31,6 +33,7 @@ class MacroFileInfo:
     pixel_count: int | None = None
     line_count: int | None = None
     frame_count: int | None = None
+    path_strategy: str | None = None
 
 
 def build_part_color_map(manifest: dict[str, object]) -> dict[str, str]:
@@ -71,6 +74,7 @@ def build_macro_file_infos(
                 pixel_count=optional_int(part.get("pixel_count")),
                 line_count=optional_int(part.get("line_count")),
                 frame_count=optional_int(part.get("frame_count")),
+                path_strategy=optional_string(part.get("path_strategy")),
             )
         )
     return infos
@@ -118,6 +122,7 @@ def main() -> int:
         from PyQt6.QtWidgets import (
             QAbstractItemView,
             QApplication,
+            QCheckBox,
             QComboBox,
             QDialog,
             QFileDialog,
@@ -141,7 +146,7 @@ def main() -> int:
     except ImportError as error:
         raise SystemExit(f"PyQt6 import failed: {error}. Run `uv sync` first.") from error
 
-    from src.gui_workers import GenerateWorker, TransferWorker, format_duration
+    from src.gui_workers import GenerateWorker, TransferWorker
 
     configure_i18n()
 
@@ -241,6 +246,7 @@ def main() -> int:
             self.generate_button = QPushButton()
             self.generate_button.setObjectName("PrimaryButton")
             self.generate_button.clicked.connect(self.start_generation)
+            self.diagonal_movement_checkbox = QCheckBox()
             self.input_text_label = QLabel()
             self.output_text_label = QLabel()
             self.output_hint_label = QLabel()
@@ -250,6 +256,7 @@ def main() -> int:
             generate_layout.addWidget(self.input_button, 0, 2)
             generate_layout.addWidget(self.output_text_label, 1, 0)
             generate_layout.addWidget(self.output_hint_label, 1, 1, 1, 2)
+            generate_layout.addWidget(self.diagonal_movement_checkbox, 2, 1)
             generate_layout.addWidget(self.generate_button, 2, 2)
             right_layout.addWidget(self.generate_group)
 
@@ -387,6 +394,10 @@ def main() -> int:
             self.input_button.setText(tr("generate.choose_json"))
             self.update_living_grid_link()
             self.output_hint_label.setText(tr("generate.output_hint"))
+            self.diagonal_movement_checkbox.setText(tr("generate.diagonal_movement"))
+            self.diagonal_movement_checkbox.setToolTip(
+                tr("generate.diagonal_movement_tooltip")
+            )
             self.generate_button.setText(tr("generate.button"))
             self.serial_group.setTitle(tr("serial.group"))
             self.port_text_label.setText(tr("serial.port"))
@@ -413,6 +424,7 @@ def main() -> int:
                     tr("draw.file_name"),
                     tr("draw.file_pixels"),
                     tr("draw.file_lines"),
+                    tr("draw.file_time"),
                 ]
             )
 
@@ -573,7 +585,10 @@ def main() -> int:
                 return
             input_path = Path(input_text)
             self.set_busy(True, "status.generating")
-            worker = GenerateWorker(input_path)
+            worker = GenerateWorker(
+                input_path,
+                enable_diagonal_movement=self.diagonal_movement_checkbox.isChecked(),
+            )
             thread = self.start_worker(worker)
             thread.started.connect(worker.run)
             worker.status.connect(self.set_status)
@@ -604,6 +619,7 @@ def main() -> int:
                     "files": len(self.result.macro_files),
                     "lines": self.result.total_lines,
                     "frames": self.result.total_frames,
+                    "duration": format_frame_duration(self.result.total_frames),
                 }
                 self.update_meta_label()
             except Exception as error:  # noqa: BLE001 - keep the GUI from staying busy.
@@ -661,6 +677,12 @@ def main() -> int:
                     line_item = self.readonly_table_item(self.format_table_count(info.line_count))
                     line_item.setToolTip(tooltip)
                     self.file_table.setItem(row, FILE_TABLE_LINES_COLUMN, line_item)
+
+                    time_item = self.readonly_table_item(
+                        self.format_table_duration(info.frame_count)
+                    )
+                    time_item.setToolTip(self.file_row_time_tooltip(info))
+                    self.file_table.setItem(row, FILE_TABLE_TIME_COLUMN, time_item)
                 self.file_table.resizeColumnsToContents()
                 self.file_table.horizontalHeader().setStretchLastSection(True)
             finally:
@@ -678,6 +700,11 @@ def main() -> int:
                 return tr("draw.skip_forbidden_84_tooltip")
             return tr("draw.skip_forbidden_parts_tooltip")
 
+        def file_row_time_tooltip(self, info: MacroFileInfo) -> str:
+            if info.path_strategy:
+                return tr("draw.file_time_tooltip", strategy=info.path_strategy)
+            return tr("draw.file_time_tooltip", strategy="-")
+
         def readonly_table_item(self, text: str) -> QTableWidgetItem:
             item = QTableWidgetItem(text)
             item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
@@ -686,6 +713,10 @@ def main() -> int:
         @staticmethod
         def format_table_count(value: int | None) -> str:
             return "-" if value is None else str(value)
+
+        @staticmethod
+        def format_table_duration(value: int | None) -> str:
+            return format_frame_duration(value)
 
         def start_match(self) -> None:
             port = self.selected_port()
