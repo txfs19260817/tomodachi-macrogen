@@ -2,11 +2,11 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from src.config import AppConfig
-from src.living_grid import LivingGridData, load_living_grid_json
-from src.macro_timing import dry_run_draw
-from src.palette import PaletteColor
-from src.path_planner import PathPlanningContext, PathPlanningStrategy, iter_path_strategies
+from src.core.config import AppConfig
+from src.core.living_grid import LivingGridData, load_living_grid_json
+from src.core.palette import PaletteColor
+from src.core.path_planner import PathPlanningContext, PathPlanningStrategy, iter_path_strategies
+from src.macro.macro_timing import dry_run_draw
 from tomodachi_macrogen import build_living_grid_colors, choose_color_path, load_config
 
 FIXTURE_ROOT = Path(__file__).resolve().parents[1] / "tests" / "fixtures"

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from src.living_grid import load_living_grid_json
+from src.core.living_grid import load_living_grid_json
 
 
 class TestLivingGrid(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestLivingGrid(unittest.TestCase):
         self.assertEqual(grid.palette[1].game.row, 2)
 
     def test_infers_game_palette_target_from_known_rgb(self) -> None:
-        fixture = Path(__file__).resolve().parent / "fixtures" / "example_game.json"
+        fixture = Path(__file__).resolve().parents[1] / "fixtures" / "example_game.json"
 
         grid = load_living_grid_json(fixture)
 

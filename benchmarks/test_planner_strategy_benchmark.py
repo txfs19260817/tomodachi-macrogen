@@ -5,8 +5,8 @@ from benchmarks.path_benchmark_helpers import (
     load_fixture_cases,
     planner_strategy_names,
 )
-from src.macro_timing import frames_to_seconds
-from src.path_planner import get_path_strategy
+from src.core.path_planner import get_path_strategy
+from src.macro.macro_timing import frames_to_seconds
 
 FIXTURE_CASES = load_fixture_cases()
 PLANNER_STRATEGIES = planner_strategy_names()

@@ -1,6 +1,6 @@
 import unittest
 
-from src.macro_writer import MacroWriter
+from src.macro.macro_writer import MacroWriter
 
 
 class TestMacroWriter(unittest.TestCase):

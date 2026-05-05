@@ -4,7 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from src.resources import BUNDLED_DATA_FILES
+from src.app.resources import BUNDLED_DATA_FILES
 
 ROOT = Path(__file__).resolve().parent
 DATA_FILES = BUNDLED_DATA_FILES

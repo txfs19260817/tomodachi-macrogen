@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
+from ..macro.macro_writer import MacroWriter
 from .config import ConfigInput, as_app_config
 from .living_grid import GamePaletteTarget, PressCounts
-from .macro_writer import MacroWriter
 
 
 @dataclass(frozen=True)

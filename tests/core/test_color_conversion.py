@@ -1,6 +1,6 @@
 import unittest
 
-from src.palette import rgb_to_hsv
+from src.core.palette import rgb_to_hsv
 
 
 class TestColorConversion(unittest.TestCase):

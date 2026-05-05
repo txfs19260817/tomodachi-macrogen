@@ -4,7 +4,7 @@ from benchmarks.path_benchmark_helpers import (
     benchmark_auto_tsp_limit,
     load_fixture_cases,
 )
-from src.macro_timing import frames_to_seconds
+from src.macro.macro_timing import frames_to_seconds
 
 FIXTURE_CASES = load_fixture_cases()
 TSP_LIMITS = (0, 120, 400, 800, 1200)

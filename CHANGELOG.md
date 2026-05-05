@@ -8,6 +8,10 @@ All notable changes to this project are generated from Git history by git-cliff.
 - Add adaptive path planning benchmarks
 
 
+### Refactoring
+- Group source and test modules
+
+
 ## [1.0.3] - 2026-05-04
 
 ### Features

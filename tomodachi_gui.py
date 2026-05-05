@@ -7,10 +7,10 @@ from pathlib import Path
 
 from PIL import Image
 
-from src.gui_i18n import LOCALE_OPTIONS, configure_i18n, current_locale, set_locale, tr
-from src.gui_theme import build_theme_style
-from src.macro_timing import format_duration, format_frame_duration
-from src.resources import APP_ICON, RUN_README_EN_HTML, RUN_README_HTML
+from src.app.resources import APP_ICON, RUN_README_EN_HTML, RUN_README_HTML
+from src.gui.gui_i18n import LOCALE_OPTIONS, configure_i18n, current_locale, set_locale, tr
+from src.gui.gui_theme import build_theme_style
+from src.macro.macro_timing import format_duration, format_frame_duration
 from swicc_runner import TransferProgress, import_serial_tools
 from tomodachi_macrogen import GenerationResult
 
@@ -146,7 +146,7 @@ def main() -> int:
     except ImportError as error:
         raise SystemExit(f"PyQt6 import failed: {error}. Run `uv sync` first.") from error
 
-    from src.gui_workers import GenerateWorker, TransferWorker
+    from src.gui.gui_workers import GenerateWorker, TransferWorker
 
     configure_i18n()
 
@@ -508,7 +508,7 @@ def main() -> int:
 
         def load_json_preview(self, path: Path) -> None:
             try:
-                from src.living_grid import load_living_grid_json
+                from src.core.living_grid import load_living_grid_json
 
                 grid = load_living_grid_json(path)
             except Exception as error:  # noqa: BLE001 - invalid user JSON should be visible.

@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 
-from .config import ConfigInput, as_app_config
+from ..core.config import ConfigInput, as_app_config
 from .swicc_format import (
     MacroLine,
     format_controller_state,

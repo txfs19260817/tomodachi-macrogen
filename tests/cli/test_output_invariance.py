@@ -7,7 +7,7 @@ from PIL import Image
 from tomodachi_macrogen import GenerationOptions, generate_macros
 
 COLOR_ORDERS = ("frequency", "original-palette", "luminance", "hue")
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / "example.json"
+FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "example.json"
 
 
 class TestOutputInvariance(unittest.TestCase):

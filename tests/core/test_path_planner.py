@@ -1,6 +1,6 @@
 import unittest
 
-from src.path_planner import (
+from src.core.path_planner import (
     PATH_STRATEGIES,
     PathPlanningStrategy,
     get_path_strategy,

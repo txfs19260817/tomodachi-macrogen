@@ -2,7 +2,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-SOURCE_ROOT = Path(__file__).resolve().parent.parent
+SOURCE_ROOT = Path(__file__).resolve().parents[2]
 RESOURCE_ROOT = Path(getattr(sys, "_MEIPASS", SOURCE_ROOT))
 
 DEFAULT_CONFIG = RESOURCE_ROOT / "config.default.json"

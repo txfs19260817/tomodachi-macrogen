@@ -1,6 +1,6 @@
 import sys
 
-from src.resources import APP_ICON, BUNDLED_DATA_FILES, RUN_README_OUTPUTS, SOURCE_ROOT
+from src.app.resources import APP_ICON, BUNDLED_DATA_FILES, RUN_README_OUTPUTS, SOURCE_ROOT
 from tomodachi_build_gui import APP_ICON as BUILD_ICON
 from tomodachi_build_gui import DATA_FILES
 

@@ -1,8 +1,8 @@
 import unittest
 
-from src.color_picker import ColorPicker
-from src.living_grid import GamePaletteTarget, PressCounts
-from src.macro_writer import MacroWriter
+from src.core.color_picker import ColorPicker
+from src.core.living_grid import GamePaletteTarget, PressCounts
+from src.macro.macro_writer import MacroWriter
 
 
 class TestColorPickerPress(unittest.TestCase):

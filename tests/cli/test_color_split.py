@@ -5,8 +5,8 @@ from pathlib import Path
 
 from PIL import Image
 
-from src.config import AppConfig
-from src.living_grid import load_living_grid_json
+from src.core.config import AppConfig
+from src.core.living_grid import load_living_grid_json
 from tomodachi_macrogen import (
     GenerationOptions,
     build_living_grid_colors,
@@ -15,7 +15,7 @@ from tomodachi_macrogen import (
     generate_macros,
 )
 
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / "example.json"
+FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "example.json"
 
 
 class TestColorSplit(unittest.TestCase):

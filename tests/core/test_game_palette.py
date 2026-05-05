@@ -1,6 +1,6 @@
 import unittest
 
-from src.game_palette import find_game_palette_target
+from src.core.game_palette import find_game_palette_target
 
 
 class TestGamePalette(unittest.TestCase):
