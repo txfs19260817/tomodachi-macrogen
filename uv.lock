@@ -640,7 +640,7 @@ wheels = [
 
 [[package]]
 name = "tomodachi-macrogen"
-version = "1.0.3"
+version = "1.0.4"
 source = { editable = "." }
 dependencies = [
     { name = "pillow" },

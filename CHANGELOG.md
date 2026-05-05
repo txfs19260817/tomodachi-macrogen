@@ -13,6 +13,10 @@ All notable changes to this project are generated from Git history by git-cliff.
 - Group source and test modules
 
 
+### Legacy Changes
+- Version 1.0.3 → 1.0.4
+
+
 ## [1.0.3] - 2026-05-04
 
 ### Features
