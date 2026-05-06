@@ -14,6 +14,10 @@ All notable changes to this project are generated from Git history by git-cliff.
 - Package gui window icon resources
 
 
+### Legacy Changes
+- Version 1.0.5 → 1.0.6
+
+
 ## [1.0.5] - 2026-05-05
 
 ### Documentation
