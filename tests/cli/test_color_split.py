@@ -106,7 +106,7 @@ class TestColorSplit(unittest.TestCase):
             start=(0, 0),
         )
 
-        self.assertEqual(chosen_path.strategy, "tsp")
+        self.assertEqual(chosen_path.strategy, "nearest-runs")
         self.assertEqual(
             chosen_path.draw_frame_count,
             min(chosen_path.path_candidate_frames.values()),

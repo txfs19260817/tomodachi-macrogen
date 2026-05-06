@@ -211,7 +211,7 @@ class AppConfig:
     canvas_origin_x: int = 0
     canvas_origin_y: int = 0
     canvas_cell_step: int | None = None
-    enable_diagonal_movement: bool = False
+    enable_diagonal_movement: bool = True
     path_tsp_max_runs: int = 400
     color_order: str = "original-palette"
     palette_slots: int = 9

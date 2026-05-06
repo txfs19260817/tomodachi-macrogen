@@ -5,6 +5,7 @@ All notable changes to this project are generated from Git history by git-cliff.
 ## Unreleased
 
 ### Features
+- Enable diagonal canvas movement by default
 - Support centered canvas presets
 - Show planner in GUI file table
 

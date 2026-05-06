@@ -30,9 +30,9 @@ TRANSLATIONS = {
         "generate.open_living_grid": "打开 Living the Grid",
         "generate.open_living_grid_tooltip": "在默认浏览器中打开 Living the Grid 生成 JSON。",
         "generate.output_hint": "自动写入 out/<JSON 名>-<时间戳>/",
-        "generate.diagonal_movement": "实验性斜向移动",
+        "generate.diagonal_movement": "斜向移动",
         "generate.diagonal_movement_tooltip": (
-            "生成时允许同时按两个方向键移动画布光标；需要实机确认稳定后再长期使用。"
+            "生成时允许同时按两个方向键移动画布光标，包括复位后回到起点的移动。"
         ),
         "generate.button": "生成宏",
         "serial.group": "2. 串口和手柄",
@@ -121,10 +121,10 @@ TRANSLATIONS = {
             "Open Living the Grid in your default browser to create JSON."
         ),
         "generate.output_hint": "Automatically writes to out/<JSON name>-<timestamp>/",
-        "generate.diagonal_movement": "Experimental diagonal movement",
+        "generate.diagonal_movement": "Diagonal movement",
         "generate.diagonal_movement_tooltip": (
-            "Allows combined D-pad directions while generating canvas cursor movement; "
-            "keep it off unless it works reliably on hardware."
+            "Allows combined D-pad directions for canvas cursor movement, including "
+            "reset-to-start travel."
         ),
         "generate.button": "Generate",
         "serial.group": "2. Serial and Controller",

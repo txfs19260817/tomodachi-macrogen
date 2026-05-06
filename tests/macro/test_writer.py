@@ -27,6 +27,7 @@ class TestMacroWriter(unittest.TestCase):
     def test_move_cursor_tracks_canvas_position(self) -> None:
         writer = MacroWriter(
             {
+                "enable_diagonal_movement": False,
                 "timing": {
                     "movement_hold_frames": 1,
                     "movement_release_frames": 1,
@@ -40,10 +41,9 @@ class TestMacroWriter(unittest.TestCase):
             ["{R} 1", "{} 1", "{R} 1", "{} 1", "{D} 1", "{} 1"],
         )
 
-    def test_move_cursor_can_use_experimental_diagonal_dpad(self) -> None:
+    def test_move_cursor_uses_diagonal_dpad_by_default(self) -> None:
         writer = MacroWriter(
             {
-                "enable_diagonal_movement": True,
                 "timing": {
                     "movement_hold_frames": 1,
                     "movement_release_frames": 1,
@@ -62,6 +62,7 @@ class TestMacroWriter(unittest.TestCase):
     def test_canvas_cell_step_scales_physical_movement_only(self) -> None:
         writer = MacroWriter(
             {
+                "enable_diagonal_movement": False,
                 "canvas_cell_step": 3,
                 "timing": {
                     "movement_hold_frames": 1,
@@ -79,6 +80,7 @@ class TestMacroWriter(unittest.TestCase):
     def test_move_cursor_can_pause_between_movement_chunks(self) -> None:
         writer = MacroWriter(
             {
+                "enable_diagonal_movement": False,
                 "timing": {
                     "movement_hold_frames": 1,
                     "movement_release_frames": 1,
@@ -217,6 +219,7 @@ class TestMacroWriter(unittest.TestCase):
     def test_reset_canvas_to_origin_uses_fixed_physical_anchor(self) -> None:
         writer = MacroWriter(
             {
+                "enable_diagonal_movement": False,
                 "canvas_reset_right_steps": 2,
                 "canvas_reset_down_steps": 1,
                 "timing": {
@@ -254,6 +257,7 @@ class TestMacroWriter(unittest.TestCase):
             {
                 "canvas_origin_x": 2,
                 "canvas_origin_y": 1,
+                "enable_diagonal_movement": False,
                 "canvas_cell_step": 3,
                 "canvas_reset_right_steps": 1,
                 "canvas_reset_down_steps": 2,
@@ -272,6 +276,35 @@ class TestMacroWriter(unittest.TestCase):
         self.assertEqual(writer.canvas_position(), (0, 0))
         self.assertEqual(lines.count("{R} 1"), 12)
         self.assertEqual(lines.count("{D} 1"), 9)
+
+    def test_reset_canvas_to_origin_uses_diagonal_movement(self) -> None:
+        writer = MacroWriter(
+            {
+                "canvas_reset_right_steps": 2,
+                "canvas_reset_down_steps": 1,
+                "timing": {
+                    "canvas_reset_hold_frames": 3,
+                    "canvas_reset_settle_frames": 2,
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                },
+            }
+        )
+
+        writer.reset_canvas_to_origin()
+
+        self.assertEqual(writer.canvas_position(), (0, 0))
+        self.assertEqual(
+            [line.text for line in writer.lines],
+            [
+                "{} (0 0 128 128) 3",
+                "{} (128 128 128 128) 2",
+                "{R D} 1",
+                "{} 1",
+                "{R} 1",
+                "{} 1",
+            ],
+        )
 
 
 if __name__ == "__main__":

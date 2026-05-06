@@ -103,7 +103,7 @@ uv run tomodachi-clean
 - `--match-controller`：不提供 JSON 时，单独执行匹配手柄步骤。
 - `--config CONFIG`：额外配置，会覆盖 `config.default.json`。
 - `--color-order frequency|original-palette|luminance|hue`：颜色文件顺序，默认 `original-palette`。
-- `--diagonal-movement`：实验性画布斜向移动。
+- `--diagonal-movement` / `--no-diagonal-movement`：开关画布斜向移动。
 - `--clean-output`：删除 `out/` 下的生成结果。
 - `--clean-cache`：删除 `.ruff_cache`、`__pycache__` 等缓存。
 
@@ -120,7 +120,7 @@ uv run tomodachi-clean
 - `timing.*`：按键、移动、菜单等待时间。
 - `game_palette_*`：Game Palette 导航尺寸和等待时间。
 - `movement_chunk_size` / `movement_chunk_settle_frames`：长距离移动时分块停顿。
-- `enable_diagonal_movement`：实验性组合方向键移动；实机确认稳定前建议保持关闭。
+- `enable_diagonal_movement`：组合方向键移动画布，默认开启。
 - `path_tsp_max_runs`：TSP/2-opt 候选最多处理的水平连续段数量。
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`：`color_*.txt` 开头硬复位后的回退步数。
 - `timing.canvas_reset_*`：`color_*.txt` 开头硬复位的摇杆保持和停顿时间。

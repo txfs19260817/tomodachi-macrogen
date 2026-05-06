@@ -17,7 +17,7 @@ class GenerateWorker(QObject):
     finished = pyqtSignal(object)
     failed = pyqtSignal(str)
 
-    def __init__(self, input_path: Path, *, enable_diagonal_movement: bool = False) -> None:
+    def __init__(self, input_path: Path, *, enable_diagonal_movement: bool = True) -> None:
         super().__init__()
         self.input_path = input_path
         self.enable_diagonal_movement = enable_diagonal_movement

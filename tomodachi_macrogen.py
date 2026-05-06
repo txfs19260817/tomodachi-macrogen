@@ -143,7 +143,7 @@ def main() -> int:
         GenerationOptions(
             config_path=args.config,
             color_order=args.color_order,
-            enable_diagonal_movement=args.diagonal_movement or None,
+            enable_diagonal_movement=args.diagonal_movement,
         ),
     )
     print(f"Wrote Living the Grid macros to {result.out_dir}")
@@ -334,8 +334,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--diagonal-movement",
-        action="store_true",
-        help="Experimental: move canvas cursor with combined diagonal D-pad presses",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Move canvas cursor with combined diagonal D-pad presses",
     )
     parser.add_argument(
         "--clean-output",

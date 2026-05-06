@@ -114,7 +114,7 @@ Options:
 - `--match-controller`: with no input, run the controller pairing step by itself.
 - `--config CONFIG`: extra config JSON overriding `config.default.json`.
 - `--color-order frequency|original-palette|luminance|hue`: color file order, default `original-palette`.
-- `--diagonal-movement`: experimental D-pad diagonal movement for canvas travel.
+- `--diagonal-movement` / `--no-diagonal-movement`: toggle D-pad diagonal movement for canvas travel.
 - `--clean-output`: delete generated outputs under `out/`.
 - `--clean-cache`: delete `.ruff_cache`, `__pycache__`, and similar caches.
 
@@ -134,7 +134,7 @@ Common tuning fields:
 - `timing.*`: button, movement, and menu waits.
 - `game_palette_*`: Game Palette navigation dimensions and timing.
 - `movement_chunk_size` / `movement_chunk_settle_frames`: pauses during long movement.
-- `enable_diagonal_movement`: experimental combined D-pad movement; leave off unless it is stable on your hardware.
+- `enable_diagonal_movement`: combined D-pad movement for canvas travel, enabled by default.
 - `path_tsp_max_runs`: maximum horizontal runs for the bounded TSP/2-opt candidate.
 - `canvas_reset_right_steps` / `canvas_reset_down_steps`: recovery steps after the `color_*.txt` hard reset.
 - `timing.canvas_reset_*`: stick hold and settle timing for the `color_*.txt` hard reset.

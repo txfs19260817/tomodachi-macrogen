@@ -262,6 +262,7 @@ def main() -> int:
             self.generate_button.setObjectName("PrimaryButton")
             self.generate_button.clicked.connect(self.start_generation)
             self.diagonal_movement_checkbox = QCheckBox()
+            self.diagonal_movement_checkbox.setChecked(True)
             self.input_text_label = QLabel()
             self.output_text_label = QLabel()
             self.output_hint_label = QLabel()

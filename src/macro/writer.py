@@ -104,8 +104,7 @@ class MacroWriter:
 
         self.stick(stick_min, stick_min, neutral, neutral, hold_frames)
         self.stick(neutral, neutral, neutral, neutral, settle_frames)
-        self._move_canvas_axis(right_steps, "R", "L")
-        self._move_canvas_axis(down_steps, "D", "U")
+        self._move_canvas_physical_delta(right_steps, down_steps)
         self.current_x = self.config.canvas_origin_x
         self.current_y = self.config.canvas_origin_y
 
@@ -137,6 +136,13 @@ class MacroWriter:
     def _move_canvas_direction(self, direction: str, steps: int) -> None:
         self._move_canvas_buttons((direction,), steps)
 
+    def _move_canvas_physical_delta(self, dx_steps: int, dy_steps: int) -> None:
+        if self.config.enable_diagonal_movement:
+            self._move_canvas_physical_delta_diagonal(dx_steps, dy_steps)
+            return
+        self._move_canvas_axis(dx_steps, "R", "L")
+        self._move_canvas_axis(dy_steps, "D", "U")
+
     def _move_canvas_axis(
         self,
         steps: int,
@@ -157,11 +163,16 @@ class MacroWriter:
             self._move_canvas_direction("U", -dy * self.canvas_cell_step)
 
     def _move_canvas_delta_diagonal(self, dx: int, dy: int) -> None:
-        horizontal = "R" if dx > 0 else "L" if dx < 0 else None
-        vertical = "D" if dy > 0 else "U" if dy < 0 else None
-        horizontal_steps = abs(dx) * self.canvas_cell_step
-        vertical_steps = abs(dy) * self.canvas_cell_step
+        self._move_canvas_physical_delta_diagonal(
+            dx * self.canvas_cell_step,
+            dy * self.canvas_cell_step,
+        )
 
+    def _move_canvas_physical_delta_diagonal(self, dx_steps: int, dy_steps: int) -> None:
+        horizontal = "R" if dx_steps > 0 else "L" if dx_steps < 0 else None
+        vertical = "D" if dy_steps > 0 else "U" if dy_steps < 0 else None
+        horizontal_steps = abs(dx_steps)
+        vertical_steps = abs(dy_steps)
         if horizontal is not None and vertical is not None:
             diagonal_steps = min(horizontal_steps, vertical_steps)
             self._move_canvas_buttons((horizontal, vertical), diagonal_steps)
