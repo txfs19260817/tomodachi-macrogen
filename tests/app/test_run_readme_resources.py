@@ -2,7 +2,7 @@ import sys
 
 from src.app.resources import APP_ICON, BUNDLED_DATA_FILES, RUN_README_OUTPUTS, SOURCE_ROOT
 from tomodachi_build_gui import APP_ICON as BUILD_ICON
-from tomodachi_build_gui import DATA_FILES
+from tomodachi_build_gui import DATA_FILES, data_file_destination
 
 
 def test_run_readme_markdown_and_html_keep_user_sections() -> None:
@@ -38,10 +38,19 @@ def test_bundled_data_files_include_all_run_readmes() -> None:
 
 def test_bundled_data_files_include_app_icon() -> None:
     assert APP_ICON.exists()
+    expected_suffix = ".ico" if sys.platform == "win32" else ".png"
+    assert APP_ICON.suffix == expected_suffix
     assert "assets/app-icon.png" in DATA_FILES
+    assert "assets/app-icon.ico" in DATA_FILES
 
 
 def test_build_icon_uses_native_windows_icon() -> None:
     assert BUILD_ICON.exists()
     expected_suffix = ".ico" if sys.platform == "win32" else ".png"
     assert BUILD_ICON.suffix == expected_suffix
+
+
+def test_pyinstaller_data_destinations_preserve_resource_directories() -> None:
+    assert data_file_destination("config.default.json") == "."
+    assert data_file_destination("assets/app-icon.png") == "assets"
+    assert data_file_destination("assets/app-icon.ico") == "assets"

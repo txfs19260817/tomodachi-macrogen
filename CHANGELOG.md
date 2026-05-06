@@ -10,6 +10,10 @@ All notable changes to this project are generated from Git history by git-cliff.
 - Show planner in GUI file table
 
 
+### Fixes
+- Package gui window icon resources
+
+
 ## [1.0.5] - 2026-05-05
 
 ### Documentation

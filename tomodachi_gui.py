@@ -15,6 +15,7 @@ from swicc_runner import TransferProgress, import_serial_tools
 from tomodachi_macrogen import GenerationResult
 
 LIVING_THE_GRID_URL = "https://living-the-grid.com/"
+WINDOWS_APP_USER_MODEL_ID = "txfs19260817.tomodachi-macrogen.gui"
 SWATCH_SIZE = 14
 FILE_TABLE_USE_COLUMN = 0
 FILE_TABLE_COLOR_COLUMN = 1
@@ -114,6 +115,19 @@ def optional_string(value: object) -> str | None:
 
 def is_macro_file_skip_allowed(manifest: dict[str, object]) -> bool:
     return manifest.get("split_strategy") == "color" and manifest.get("palette_source") != "game"
+
+
+def set_windows_app_user_model_id() -> None:
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            WINDOWS_APP_USER_MODEL_ID
+        )
+    except (AttributeError, OSError):
+        return
 
 
 def main() -> int:
@@ -978,8 +992,12 @@ def main() -> int:
         def show_error(self, message: str) -> None:
             QMessageBox.critical(self, tr("error.title"), message)
 
+    set_windows_app_user_model_id()
     app = QApplication(sys.argv)
+    app_icon = QIcon(str(APP_ICON))
+    app.setWindowIcon(app_icon)
     window = MainWindow()
+    window.setWindowIcon(app_icon)
     window.show()
     return app.exec()
 

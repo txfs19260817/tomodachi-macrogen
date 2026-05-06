@@ -32,6 +32,11 @@ def clean_intermediates() -> None:
         spec_file.unlink()
 
 
+def data_file_destination(relative_path: str) -> str:
+    parent = Path(relative_path).parent
+    return "." if str(parent) == "." else str(parent)
+
+
 def main() -> int:
     args_namespace = build_parser().parse_args()
 
@@ -48,7 +53,12 @@ def main() -> int:
         str(APP_ICON),
     ]
     for relative_path in DATA_FILES:
-        args.extend(["--add-data", f"{ROOT / relative_path}{os.pathsep}."])
+        args.extend(
+            [
+                "--add-data",
+                f"{ROOT / relative_path}{os.pathsep}{data_file_destination(relative_path)}",
+            ]
+        )
     args.append(str(ROOT / "tomodachi_gui.py"))
     PyInstaller.__main__.run(args)
     if not args_namespace.keep_build:
