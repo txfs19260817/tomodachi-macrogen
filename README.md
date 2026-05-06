@@ -21,7 +21,7 @@ usual first-run warning.
 ## Basic Workflow
 
 1. Upload an image to Living the Grid.
-2. Select `square`, `smooth`, one of `1px / 3px / 7px / 13px / 19px / 27px`, and the `game` palette.
+2. Select the target canvas preset, `smooth`, one of `1px / 3px / 7px / 13px / 19px / 27px`, and the `game` palette.
 3. Set `max colours`, for example `12`.
 4. Export `JSON (per-pixel data)`.
 5. Open `tomodachi-gui`, choose the JSON, and generate macros.
@@ -43,10 +43,12 @@ For non-84-color output, you may uncheck generated files in the GUI to skip colo
 already filled manually, such as a background color. 84-color output cannot skip files
 because palette navigation depends on the previous selected color.
 
-Each `color_*.txt` starts by hard-resetting the brush cursor to the canvas start. If
-the JSON colors include 84-color palette coordinates, the macro opens the 84-color
-Game Palette with `Y Y L1` and moves from the lower-left black swatch or the previous
-84-color position. Other colors use the HSB picker with JSON `press.h/s/b` values.
+Each `color_*.txt` starts by hard-resetting the brush cursor to the canvas start. Book
+cover, TV screen, video game, and interior wallpaper/floor JSON exports are centered
+automatically from their `canvas.w/h` values. If the JSON colors include 84-color
+palette coordinates, the macro opens the 84-color Game Palette with `Y Y L1` and moves
+from the lower-left black swatch or the previous 84-color position. Other colors use
+the HSB picker with JSON `press.h/s/b` values.
 
 ## Hardware Setup
 

@@ -268,6 +268,82 @@ class TestColorSplit(unittest.TestCase):
             self.assertEqual(manifest["palette_source"], "auto")
             self.assertIn("{R1}", part)
 
+    def test_centered_canvas_preset_offsets_each_color_reset(self) -> None:
+        payload = {
+            "source": "living-the-grid.com",
+            "version": 2,
+            "width": 1,
+            "height": 1,
+            "brush": {"mode": "smooth", "px": 3},
+            "canvas": {"preset": "videogame", "w": 256, "h": 144},
+            "palette": [
+                {
+                    "hex": "#000000",
+                    "rgb": [0, 0, 0],
+                    "press": {"h": 0, "s": 0, "b": 0},
+                    "game": {"row": 7, "col": 1},
+                }
+            ],
+            "pixels": [[0]],
+        }
+        config = {
+            "canvas_reset_right_steps": 0,
+            "canvas_reset_down_steps": 0,
+            "timing": {
+                "tap_hold_frames": 1,
+                "tap_release_frames": 1,
+                "draw_hold_frames": 1,
+                "draw_release_frames": 1,
+                "movement_hold_frames": 1,
+                "movement_release_frames": 1,
+                "canvas_reset_hold_frames": 1,
+                "canvas_reset_settle_frames": 1,
+                "menu_open_frames": 1,
+                "screen_settle_frames": 1,
+                "menu_close_frames": 1,
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "videogame.json"
+            config_path = Path(tmp) / "config.json"
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            result = generate_macros(
+                input_path,
+                GenerationOptions(
+                    config_path=config_path,
+                    output_root=tmp,
+                    timestamp="out",
+                ),
+            )
+            out_dir = result.out_dir
+
+            manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
+            config_used_path = out_dir / "config_used.json"
+            config_used = json.loads(config_used_path.read_text(encoding="utf-8"))
+            reset_lines = _lines_from_canvas_reset_to_first_draw(
+                result.macro_files[0].read_text(encoding="utf-8").splitlines()
+            )
+            rerun = generate_macros(
+                input_path,
+                GenerationOptions(
+                    config_path=config_used_path,
+                    output_root=tmp,
+                    timestamp="out-again",
+                ),
+            )
+            rerun_reset_lines = _lines_from_canvas_reset_to_first_draw(
+                rerun.macro_files[0].read_text(encoding="utf-8").splitlines()
+            )
+
+        self.assertEqual(manifest["canvas_start_offset"], {"x": 0, "y": 56})
+        self.assertEqual(manifest["canvas_origin"], {"x": 0, "y": 0})
+        self.assertEqual(config_used["canvas_cell_step"], 3)
+        self.assertEqual(config_used["canvas_origin_y"], 0)
+        self.assertEqual(reset_lines.count("{D} 1"), 56)
+        self.assertEqual(rerun_reset_lines.count("{D} 1"), 56)
+
 
 def _read_pixels(path: Path) -> bytes:
     with Image.open(path) as image:
@@ -276,6 +352,12 @@ def _read_pixels(path: Path) -> bytes:
 
 def _lines_before_canvas_reset(lines: list[str]) -> list[str]:
     return lines[: lines.index("{} (0 0 128 128) 1")]
+
+
+def _lines_from_canvas_reset_to_first_draw(lines: list[str]) -> list[str]:
+    reset_index = lines.index("{} (0 0 128 128) 1")
+    draw_index = reset_index + lines[reset_index:].index("{A} 1")
+    return lines[reset_index:draw_index]
 
 
 if __name__ == "__main__":

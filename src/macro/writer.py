@@ -83,18 +83,29 @@ class MacroWriter:
         self.current_x = int(x) + self.config.canvas_origin_x
         self.current_y = int(y) + self.config.canvas_origin_y
 
-    def reset_canvas_to_origin(self) -> None:
+    def reset_canvas_to_origin(
+        self,
+        physical_offset: tuple[int, int] = (0, 0),
+    ) -> None:
         neutral = self._neutral_stick()
         stick_min = self.config.stick.min
         hold_frames = self.timing.canvas_reset_hold_frames
         settle_frames = self.timing.canvas_reset_settle_frames
-        right_steps = self.config.canvas_reset_right_steps
-        down_steps = self.config.canvas_reset_down_steps
+        right_steps = (
+            self.config.canvas_reset_right_steps
+            + int(physical_offset[0])
+            + self.config.canvas_origin_x * self.canvas_cell_step
+        )
+        down_steps = (
+            self.config.canvas_reset_down_steps
+            + int(physical_offset[1])
+            + self.config.canvas_origin_y * self.canvas_cell_step
+        )
 
         self.stick(stick_min, stick_min, neutral, neutral, hold_frames)
         self.stick(neutral, neutral, neutral, neutral, settle_frames)
-        self._move_canvas_direction("R", right_steps)
-        self._move_canvas_direction("D", down_steps)
+        self._move_canvas_axis(right_steps, "R", "L")
+        self._move_canvas_axis(down_steps, "D", "U")
         self.current_x = self.config.canvas_origin_x
         self.current_y = self.config.canvas_origin_y
 
@@ -125,6 +136,15 @@ class MacroWriter:
 
     def _move_canvas_direction(self, direction: str, steps: int) -> None:
         self._move_canvas_buttons((direction,), steps)
+
+    def _move_canvas_axis(
+        self,
+        steps: int,
+        positive_direction: str,
+        negative_direction: str,
+    ) -> None:
+        direction = positive_direction if steps >= 0 else negative_direction
+        self._move_canvas_direction(direction, abs(steps))
 
     def _move_canvas_delta_axis_aligned(self, dx: int, dy: int) -> None:
         if dx > 0:

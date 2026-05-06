@@ -19,7 +19,7 @@ English documentation: [README.md](README.md). 更新记录见 [CHANGELOG.md](CH
 ## 基本流程
 
 1. 在 Living the Grid 上传图片。
-2. 选择 `square`、`smooth`、`1px / 3px / 7px / 13px / 19px / 27px` 之一、`game` palette。
+2. 选择目标画布 preset、`smooth`、`1px / 3px / 7px / 13px / 19px / 27px` 之一、`game` palette。
 3. 设置 `max colours`，例如 `12`。
 4. 导出 `JSON (per-pixel data)`。
 5. 打开 `tomodachi-gui`，选择 JSON，生成宏。
@@ -39,7 +39,7 @@ English documentation: [README.md](README.md). 更新记录见 [CHANGELOG.md](CH
 
 非 84 色输出可以在 GUI 里取消勾选某些颜色文件，用来跳过已经手动油漆桶填充的背景色。84 色输出不允许跳过文件，因为色板导航依赖上一个文件选中的颜色。
 
-每个 `color_*.txt` 开头都会把画笔硬复位到画布起点。如果 JSON 颜色带 84 色盘坐标，宏会用 `Y Y L1` 打开 84 色 Game Palette，并从左下角黑色或上一次选中的 84 色位置相对移动；其它颜色会进入 HSB 选色器并使用 JSON 里的 `press.h/s/b`。
+每个 `color_*.txt` 开头都会把画笔硬复位到画布起点。Book cover、TV screen、Video game、Interior Wallpaper/floor 会根据 JSON 里的 `canvas.w/h` 自动居中起笔。如果 JSON 颜色带 84 色盘坐标，宏会用 `Y Y L1` 打开 84 色 Game Palette，并从左下角黑色或上一次选中的 84 色位置相对移动；其它颜色会进入 HSB 选色器并使用 JSON 里的 `press.h/s/b`。
 
 ## 硬件设置
 

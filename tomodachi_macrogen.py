@@ -283,6 +283,14 @@ def build_manifest(
         "input_version": grid.version,
         "brush": grid.brush,
         "canvas": grid.canvas,
+        "canvas_start_offset": {
+            "x": grid.canvas_start_offset[0],
+            "y": grid.canvas_start_offset[1],
+        },
+        "canvas_origin": {
+            "x": config.canvas_origin_x,
+            "y": config.canvas_origin_y,
+        },
         "canvas_cell_step": config.canvas_cell_step,
         "enable_diagonal_movement": config.enable_diagonal_movement,
         "palette_source": palette_source,
@@ -522,7 +530,7 @@ def generate_color_split_macros(
 
         select_current_color(picker, palette_entry)
         game_palette_position = picker.game_palette_position
-        writer.reset_canvas_to_origin()
+        writer.reset_canvas_to_origin(grid.canvas_start_offset)
         chosen_path = choose_color_path(
             config,
             grid.indices,

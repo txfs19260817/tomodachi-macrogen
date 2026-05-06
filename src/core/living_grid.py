@@ -7,6 +7,26 @@ from PIL import Image
 
 from .game_palette import find_game_palette_target
 
+BASE_CANVAS_SIZE = 256
+CENTERED_CANVAS_PRESETS = {
+    "book",
+    "bookcover",
+    "cover",
+    "interiorfloor",
+    "interiorwallpaper",
+    "floor",
+    "tv",
+    "tvscreen",
+    "videogame",
+    "wallpaper",
+}
+CENTERED_CANVAS_SIZES = {
+    (180, 256),  # Book cover
+    (256, 131),  # TV screen
+    (256, 144),  # Video game
+    (172, 256),  # Interior wallpaper/floor
+}
+
 
 @dataclass(frozen=True)
 class PressCounts:
@@ -50,6 +70,40 @@ class LivingGridData:
         if not isinstance(px, int) or px < 1:
             raise ValueError("brush.px must be a positive integer")
         return px
+
+    @property
+    def canvas_start_offset(self) -> tuple[int, int]:
+        return infer_canvas_start_offset(self.canvas, self.width, self.height)
+
+
+def infer_canvas_start_offset(
+    canvas: dict[str, Any],
+    fallback_width: int,
+    fallback_height: int,
+) -> tuple[int, int]:
+    width = _parse_canvas_dimension(canvas.get("w"), fallback_width)
+    height = _parse_canvas_dimension(canvas.get("h"), fallback_height)
+    preset = _normalize_canvas_preset(canvas.get("preset"))
+    if preset in CENTERED_CANVAS_PRESETS or (width, height) in CENTERED_CANVAS_SIZES:
+        return (
+            max(0, (BASE_CANVAS_SIZE - width) // 2),
+            max(0, (BASE_CANVAS_SIZE - height) // 2),
+        )
+    return (0, 0)
+
+
+def _normalize_canvas_preset(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    return "".join(character for character in value.casefold() if character.isalnum())
+
+
+def _parse_canvas_dimension(value: object, fallback: int) -> int:
+    if isinstance(value, bool):
+        return fallback
+    if isinstance(value, int) and value > 0:
+        return value
+    return fallback
 
 
 def load_living_grid_json(path: str | Path) -> LivingGridData:

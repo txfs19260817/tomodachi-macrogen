@@ -3,7 +3,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from src.core.living_grid import load_living_grid_json
+from src.core.living_grid import infer_canvas_start_offset, load_living_grid_json
+
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
 
 class TestLivingGrid(unittest.TestCase):
@@ -79,6 +81,41 @@ class TestLivingGrid(unittest.TestCase):
         self.assertEqual((grid.palette[0].game.kind, grid.palette[0].game.row), ("grid", 2))
         self.assertEqual(grid.palette[0].game.col, 1)
         self.assertEqual((grid.palette[-1].game.kind, grid.palette[-1].game.row), ("extra", 7))
+
+    def test_infers_centered_canvas_start_offsets(self) -> None:
+        self.assertEqual(
+            infer_canvas_start_offset({"preset": "bookcover", "w": 180, "h": 256}, 180, 256),
+            (38, 0),
+        )
+        self.assertEqual(
+            infer_canvas_start_offset({"preset": "tvscreen", "w": 256, "h": 131}, 256, 131),
+            (0, 62),
+        )
+        self.assertEqual(
+            infer_canvas_start_offset({"preset": "videogame", "w": 256, "h": 144}, 256, 144),
+            (0, 56),
+        )
+        self.assertEqual(
+            infer_canvas_start_offset({"preset": "floor", "w": 172, "h": 256}, 172, 256),
+            (42, 0),
+        )
+        self.assertEqual(
+            infer_canvas_start_offset({"preset": "square", "w": 6, "h": 3}, 2, 2),
+            (0, 0),
+        )
+
+    def test_reads_centered_canvas_offsets_from_fixtures(self) -> None:
+        cases = [
+            ("example_bookcover.json", (180, 256), "book", (38, 0)),
+            ("example_videogame.json", (256, 144), "videogame", (0, 56)),
+        ]
+        for filename, size, preset, offset in cases:
+            with self.subTest(filename=filename):
+                grid = load_living_grid_json(FIXTURES / filename)
+
+                self.assertEqual((grid.width, grid.height), size)
+                self.assertEqual(grid.canvas.get("preset"), preset)
+                self.assertEqual(grid.canvas_start_offset, offset)
 
 
 def _write_fixture(overrides: dict[str, object] | None = None) -> Path:

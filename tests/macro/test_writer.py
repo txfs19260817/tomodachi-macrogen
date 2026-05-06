@@ -247,6 +247,32 @@ class TestMacroWriter(unittest.TestCase):
             ],
         )
 
+    def test_reset_canvas_to_origin_combines_logical_origin_and_physical_offset(
+        self,
+    ) -> None:
+        writer = MacroWriter(
+            {
+                "canvas_origin_x": 2,
+                "canvas_origin_y": 1,
+                "canvas_cell_step": 3,
+                "canvas_reset_right_steps": 1,
+                "canvas_reset_down_steps": 2,
+                "timing": {
+                    "canvas_reset_hold_frames": 3,
+                    "canvas_reset_settle_frames": 2,
+                    "movement_hold_frames": 1,
+                    "movement_release_frames": 1,
+                },
+            }
+        )
+
+        writer.reset_canvas_to_origin((5, 4))
+
+        lines = [line.text for line in writer.lines]
+        self.assertEqual(writer.canvas_position(), (0, 0))
+        self.assertEqual(lines.count("{R} 1"), 12)
+        self.assertEqual(lines.count("{D} 1"), 9)
+
 
 if __name__ == "__main__":
     unittest.main()

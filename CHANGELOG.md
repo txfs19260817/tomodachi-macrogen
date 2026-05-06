@@ -5,6 +5,7 @@ All notable changes to this project are generated from Git history by git-cliff.
 ## Unreleased
 
 ### Features
+- Support centered canvas presets
 - Show planner in GUI file table
 
 

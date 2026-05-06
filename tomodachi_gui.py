@@ -215,11 +215,16 @@ def main() -> int:
             right_layout = QVBoxLayout(right)
             right_layout.setContentsMargins(22, 22, 22, 22)
             right_layout.setSpacing(12)
+            right_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
             root_layout.addWidget(right, 6)
 
             hero_row = QHBoxLayout()
             self.hero_label = QLabel()
             self.hero_label.setObjectName("Hero")
+            self.hero_label.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Fixed,
+            )
             hero_row.addWidget(self.hero_label, 1)
             self.subtitle_label = QLabel()
             self.subtitle_label.setObjectName("Muted")
@@ -240,6 +245,10 @@ def main() -> int:
             )
             self.living_grid_link.linkActivated.connect(
                 lambda _url: self.open_living_grid(),
+            )
+            self.living_grid_link.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Fixed,
             )
             right_layout.addWidget(self.living_grid_link)
 
